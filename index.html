@@ -1272,21 +1272,28 @@
   const ALCH_CASTS_PER_HR = 1200;
 
   // Hardcoded armor sets: setId -> { name, partIds }
+  // Set IDs verified against prices.runescape.wiki /mapping (2026-05).
+  // Bandos/Armadyl chest+legs and 3rd-age have NO set-container item — sell pieces individually.
   const ARMOR_SETS = {
-    11890: { name: "Bandos armour set",     parts: [11832, 11834] },
-    11894: { name: "Armadyl armour set",    parts: [11826, 11828, 11830] },
-    11892: { name: "Dharok's armour set",   parts: [4716, 4720, 4722, 4718] },
-    11924: { name: "Ahrim's armour set",    parts: [4708, 4712, 4714, 4710] },
-    11898: { name: "Verac's armour set",    parts: [4753, 4757, 4759, 4755] },
-    11896: { name: "Torag's armour set",    parts: [4745, 4749, 4751, 4747] },
-    11926: { name: "Karil's armour set",    parts: [4732, 4736, 4738, 4734] },
-    11900: { name: "Guthan's armour set",   parts: [4724, 4728, 4730, 4726] },
-    22438: { name: "Justiciar armour set",  parts: [22326, 22327, 22328] },
-    24488: { name: "Inquisitor's armour set", parts: [24419, 24420, 24421] },
-    21049: { name: "Ancestral robes set",   parts: [21018, 21021, 21024] },
-    13070: { name: "3rd age melee set",     parts: [10350, 10348, 10346, 10352] },
-    13068: { name: "3rd age range set",     parts: [10334, 10330, 10332, 10328] },
-    13072: { name: "3rd age mage set",      parts: [10342, 10338, 10336, 10340] },
+    // Barrows
+    12873: { name: "Guthan's armour set",      parts: [4724, 4728, 4730, 4726] },
+    12875: { name: "Verac's armour set",       parts: [4753, 4757, 4759, 4755] },
+    12877: { name: "Dharok's armour set",      parts: [4716, 4720, 4722, 4718] },
+    12879: { name: "Torag's armour set",       parts: [4745, 4749, 4751, 4747] },
+    12881: { name: "Ahrim's armour set",       parts: [4708, 4712, 4714, 4710] },
+    12883: { name: "Karil's armour set",       parts: [4732, 4736, 4738, 4734] },
+    // High-end PvM gear
+    21049: { name: "Ancestral robes set",      parts: [21018, 21021, 21024] },
+    21279: { name: "Obsidian armour set",      parts: [21298, 21301, 21304] },
+    22438: { name: "Justiciar armour set",     parts: [22326, 22327, 22328] },
+    24488: { name: "Inquisitor's armour set",  parts: [24419, 24420, 24421] },
+    24333: { name: "Dagon'hai robes set",      parts: [24288, 24291, 24294] },
+    31145: { name: "Torva armour set",         parts: [26382, 26384, 26386] },
+    31148: { name: "Virtus armour set",        parts: [26241, 26243, 26245] },
+    // Moon armour (Perilous Moons)
+    31136: { name: "Blood moon armour set",    parts: [29028, 29022, 29025] },
+    31139: { name: "Blue moon armour set",     parts: [29019, 29013, 29016] },
+    31142: { name: "Eclipse moon armour set",  parts: [29010, 29004, 29007] },
   };
 
   // GE tax: 2% of sell price, floored, capped at 5,000,000 gp per item.

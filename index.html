@@ -1,0 +1,3949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OSRS Flipper — Live Margins</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://prices.runescape.wiki" />
+<link rel="preconnect" href="https://oldschool.runescape.wiki" />
+<style>
+  :root {
+    --bg: #0a0d12;
+    --bg-grad: radial-gradient(1200px 600px at 20% -10%, #15203a 0%, transparent 60%),
+               radial-gradient(900px 500px at 100% 0%, #2a1430 0%, transparent 55%),
+               #0a0d12;
+    --panel: rgba(22, 27, 36, 0.72);
+    --panel-solid: #161b24;
+    --panel-2: rgba(28, 35, 46, 0.6);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e8edf5;
+    --muted: #8a93a3;
+    --dim: #5d6573;
+    --green: #4ade80;
+    --green-soft: rgba(74, 222, 128, 0.12);
+    --red: #f87171;
+    --red-soft: rgba(248, 113, 113, 0.12);
+    --yellow: #fbbf24;
+    --accent: #7dd3fc;
+    --accent-2: #c4b5fd;
+    --gold: #fcd34d;
+    --shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Inter", Roboto, sans-serif;
+    font-size: 13px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body { background: var(--bg-grad); min-height: 100vh; }
+  ::selection { background: rgba(125,211,252,0.35); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* HEADER */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    padding: 12px 22px;
+    background: rgba(10, 13, 18, 0.88);
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+    display: grid; place-items: center; font-weight: 800; color: #2a1a00; font-size: 16px;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  }
+  .brand h1 {
+    margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+    background: linear-gradient(90deg, #ffffff, #c4b5fd);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-left: 16px; }
+  .tab {
+    background: transparent; border: 1px solid transparent;
+    color: var(--muted); padding: 6px 14px; border-radius: 8px;
+    font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .15s;
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .tab.active {
+    color: var(--text);
+    background: rgba(125,211,252,0.1);
+    border-color: rgba(125,211,252,0.3);
+  }
+  .tab-pane[hidden] { display: none; }
+
+  .status-wrap { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .status { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 var(--green); animation: pulse 2s infinite; }
+  .dot.warn { background: var(--yellow); }
+  .dot.err  { background: var(--red); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+  .refresh-ring {
+    --p: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--p) * 1%), rgba(255,255,255,0.08) 0);
+    display: grid; place-items: center; position: relative;
+  }
+  .refresh-ring::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--panel-solid); }
+  .refresh-ring span { position: relative; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* CONTROLS */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px 10px; padding: 12px 22px;
+    background: var(--panel); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 56px; z-index: 40;
+  }
+  .field {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 12px; font-size: 12px; color: var(--muted);
+    transition: border-color .15s, background .15s;
+  }
+  .field:focus-within { border-color: var(--accent); background: rgba(125,211,252,0.06); }
+  .field label { color: var(--muted); white-space: nowrap; }
+  .field input, .field select {
+    background: transparent; border: 0; outline: 0; color: var(--text);
+    font: inherit; padding: 0; width: 84px;
+  }
+  .field.search input { width: 180px; }
+  .field input::placeholder { color: var(--dim); }
+  .field.check { cursor: pointer; user-select: none; padding-left: 8px; }
+  .field.check input { width: auto; accent-color: var(--accent); }
+  .field.wide input { width: 130px; }
+
+  /* MAIN */
+  main { padding: 18px 22px 32px; position: relative; z-index: 1; }
+  section { margin-bottom: 20px; }
+  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .section-header h2 {
+    margin: 0; font-size: 11px; color: var(--muted); font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .section-header .hint { color: var(--dim); font-size: 11px; }
+
+  /* CASH PANEL */
+  .cash-panel {
+    background: linear-gradient(180deg, rgba(252, 211, 77, 0.06), rgba(245, 158, 11, 0.02));
+    border: 1px solid rgba(252, 211, 77, 0.18);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+  }
+  .cash-panel h3 { margin: 0 0 6px; font-size: 12px; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; }
+  .cash-panel .summary { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .cash-panel .summary .stat { padding: 0; background: transparent; }
+  .cash-panel .summary .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cash-panel .summary .value { font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .cash-panel .summary .value.gold { color: var(--gold); }
+  .cash-panel .summary .value.green { color: var(--green); }
+  .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; }
+  .slot-card {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex; align-items: center; gap: 8px;
+    transition: border-color .15s, transform .15s;
+    cursor: pointer;
+  }
+  .slot-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .slot-card .num { color: var(--gold); font-weight: 700; font-size: 13px; min-width: 16px; text-align: center; }
+  .slot-card .icon-wrap { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.04); display: grid; place-items: center; flex-shrink: 0; overflow: hidden; }
+  .slot-card .icon-wrap img { width: 24px; height: 24px; object-fit: contain; }
+  .slot-card .info { flex: 1; min-width: 0; }
+  .slot-card .info .name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-card .info .sub { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slot-card.empty { opacity: 0.4; cursor: default; }
+  .slot-card.empty:hover { border-color: var(--border); transform: none; }
+  .slot-card .info .sub.green { color: var(--green); }
+  .slot-card .info .sub.cap { color: var(--yellow); }
+
+  /* TOP CARDS */
+  .top-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .card {
+    background: linear-gradient(180deg, rgba(28,35,46,0.7), rgba(22,27,36,0.7));
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; position: relative; overflow: hidden;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+  .card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--green), #22c55e);
+    opacity: 0.7;
+  }
+  .card .row { display: flex; align-items: center; gap: 10px; }
+  .card .icon-wrap {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); display: grid; place-items: center;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .card .icon-wrap img { width: 32px; height: 32px; object-fit: contain; }
+  .card .name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .margin { color: var(--green); font-size: 18px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .card .sub { color: var(--muted); font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .card.empty::before { display: none; }
+  .card.empty { text-align: center; color: var(--muted); padding: 20px; cursor: default; }
+  .card.empty:hover { transform: none; }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; backdrop-filter: blur(8px);
+  }
+  .table-scroll { max-height: calc(100vh - 380px); min-height: 320px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: rgba(16, 20, 28, 0.95);
+    backdrop-filter: blur(6px);
+    color: var(--muted); font-weight: 600; text-align: right;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+    font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    transition: color .15s;
+  }
+  thead th:hover { color: var(--text); }
+  thead th.left { text-align: left; }
+  thead th.sorted { color: var(--accent); }
+  thead th.sorted::after { content: " ↓"; }
+  thead th.sorted.asc::after { content: " ↑"; }
+
+  tbody td {
+    padding: 7px 12px; text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background .12s;
+  }
+  tbody td.left { text-align: left; }
+  tbody tr { transition: background .12s; cursor: pointer; }
+  tbody tr:hover td { background: rgba(125,211,252,0.04); }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .item-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+  .item-cell .icon-wrap { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.04); display: grid; place-items: center; flex-shrink: 0; overflow: hidden; }
+  .item-cell .icon-wrap img { width: 24px; height: 24px; object-fit: contain; }
+  .item-cell .item-name { font-weight: 500; }
+
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .dim { color: var(--dim); }
+  .stale { color: var(--yellow); }
+
+  .badge { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-left: 6px; vertical-align: middle; font-weight: 600; letter-spacing: 0.04em; }
+  .badge.p { background: rgba(196, 181, 253, 0.16); color: #c4b5fd; }
+  .badge.f { background: rgba(74, 222, 128, 0.14); color: #7ee787; }
+
+  /* Tier pills */
+  .tier-pill { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; font-weight: 600; white-space: nowrap; }
+  .tier-chip { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+  .tier-hot   { background: rgba(248, 113, 113, 0.16); color: #fca5a5; }
+  .tier-solid { background: rgba(74, 222, 128, 0.14); color: #86efac; }
+  .tier-whale { background: rgba(252, 211, 77, 0.16); color: #fcd34d; }
+  .tier-risky { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
+  .tier-dead  { background: rgba(148, 163, 184, 0.14); color: #94a3b8; }
+  .tier-suspect { background: rgba(248, 113, 113, 0.2); color: #fca5a5; }
+  .tier-toppy   { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+  .card.tier-toppy::before { background: linear-gradient(180deg, #f87171, #dc2626); }
+
+  /* Drop-risk pill ("vs 24h average") */
+  .risk-pill {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .risk-pill.risk-high     { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+  .risk-pill.risk-elevated { background: rgba(251, 191, 36, 0.16); color: #fbbf24; }
+  .risk-pill.risk-fair     { background: rgba(148, 163, 184, 0.14); color: #94a3b8; }
+  .risk-pill.risk-discount { background: rgba(74, 222, 128, 0.18); color: #86efac; }
+  .risk-pill.risk-deal     { background: rgba(34, 197, 94, 0.28); color: #4ade80; box-shadow: 0 0 8px rgba(74, 222, 128, 0.25); }
+  .fee-pill { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap; background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+
+  /* Stability bar (per-row) */
+  .stab-bar { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; min-width: 70px; justify-content: flex-end; }
+  .stab-track { width: 40px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .stab-fill { height: 100%; border-radius: 3px; transition: width .2s; }
+  .stab-fill.s-low  { background: var(--red); }
+  .stab-fill.s-mid  { background: var(--yellow); }
+  .stab-fill.s-high { background: var(--green); }
+  .stab-num { font-size: 11px; font-weight: 600; min-width: 20px; text-align: right; }
+
+  /* Strategy selector — visually emphasized */
+  .field.strategy { background: rgba(125, 211, 252, 0.08); border-color: rgba(125, 211, 252, 0.3); }
+  .field.strategy select { color: var(--text); font-weight: 600; }
+
+  /* Outlook chip — directional momentum */
+  .outlook-pill {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .outlook-rising  { background: rgba(74, 222, 128, 0.20); color: #86efac; }
+  .outlook-warming { background: rgba(125, 211, 252, 0.16); color: #7dd3fc; }
+  .outlook-falling { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+  .outlook-cooling { background: rgba(251, 191, 36, 0.16); color: #fbbf24; }
+  .outlook-brewing { background: linear-gradient(135deg, rgba(125,211,252,0.25), rgba(196,181,253,0.20)); color: #c4b5fd; box-shadow: 0 0 8px rgba(196, 181, 253, 0.3); }
+
+  /* Volume surge chip — "this is moving abnormally right now" */
+  .surge-pill {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .surge-mega  { background: linear-gradient(135deg, rgba(248,113,113,0.25), rgba(252,211,77,0.22)); color: #fcd34d; box-shadow: 0 0 10px rgba(252, 211, 77, 0.35); }
+  .surge-high  { background: rgba(252, 211, 77, 0.16); color: #fcd34d; }
+  .surge-mid   { background: rgba(125, 211, 252, 0.14); color: #7dd3fc; }
+
+  /* Velocity chip — direction-of-move in the last few minutes */
+  .vel-pill {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .vel-up    { background: rgba(74, 222, 128, 0.18); color: #86efac; }
+  .vel-up-fast { background: linear-gradient(135deg, rgba(74,222,128,0.28), rgba(252,211,77,0.18)); color: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.35); }
+  .vel-dn    { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+  .vel-dn-fast { background: linear-gradient(135deg, rgba(248,113,113,0.28), rgba(252,211,77,0.18)); color: #f87171; }
+
+  /* Multi-timeframe confirmation badge */
+  .mtf-pill {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle; font-weight: 700; white-space: nowrap;
+    background: linear-gradient(135deg, rgba(196,181,253,0.22), rgba(125,211,252,0.18));
+    color: #c4b5fd;
+  }
+
+  /* ===== LIVE GE WATCHER ===== */
+  .watcher-panel {
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.06), rgba(56, 189, 248, 0.02));
+    border: 1px solid rgba(125, 211, 252, 0.22);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+  }
+  .watcher-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .watcher-header h3 { margin: 0; font-size: 12px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+  .watcher-status { color: var(--muted); font-size: 11px; flex: 1; }
+  .watcher-status.live { color: var(--green); }
+  .watcher-status.changed { color: var(--gold); font-weight: 700; }
+  .watcher-btn {
+    background: rgba(125, 211, 252, 0.14);
+    border: 1px solid rgba(125, 211, 252, 0.3);
+    color: var(--accent);
+    font: inherit; font-size: 11px; font-weight: 600;
+    padding: 4px 12px; border-radius: 999px;
+    cursor: pointer;
+    transition: filter .12s, transform .1s;
+  }
+  .watcher-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  .watcher-btn.danger { background: rgba(248, 113, 113, 0.14); border-color: rgba(248, 113, 113, 0.3); color: #fca5a5; }
+
+  .watcher-body { margin-top: 12px; display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .watcher-thumb-wrap {
+    background: #000; border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; min-width: 240px; max-width: 480px;
+    display: grid; place-items: center;
+  }
+  #watcher-thumb { display: block; max-width: 100%; height: auto; }
+  .watcher-thumb-wrap.flash { animation: thumbFlash 1.2s ease-out 2; }
+  @keyframes thumbFlash { 0%, 100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0); } 50% { box-shadow: 0 0 16px rgba(252, 211, 77, 0.7); } }
+
+  .watcher-meta { flex: 1; min-width: 200px; font-size: 12px; }
+  .watcher-meta .row { margin: 3px 0; color: var(--muted); }
+  .watcher-meta .row strong { color: var(--text); }
+
+  /* Crop modal */
+  .crop-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 200; display: grid; place-items: center;
+    padding: 20px;
+  }
+  .crop-container {
+    background: var(--panel-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px; padding: 18px;
+    max-width: 90vw; max-height: 90vh;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .crop-container h3 { margin: 0; font-size: 14px; }
+  .crop-container .hint { color: var(--muted); font-size: 11px; }
+  .crop-area {
+    position: relative; max-width: 80vw; max-height: 60vh;
+    background: #000; border-radius: 8px; overflow: hidden;
+    cursor: crosshair; user-select: none;
+  }
+  .crop-area video { display: block; max-width: 80vw; max-height: 60vh; pointer-events: none; }
+  .crop-rect {
+    position: absolute; border: 2px solid var(--gold);
+    background: rgba(252, 211, 77, 0.12);
+    pointer-events: none;
+  }
+  .crop-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .crop-actions button {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 14px; border-radius: 8px;
+    font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .crop-actions button.primary { background: var(--gold); color: #1a1300; border: 0; font-weight: 700; }
+  .crop-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Slot grid (per-slot detection) */
+  .slot-watch-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .slot-watch-card {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px; position: relative;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .slot-watch-card.changed { border-color: var(--gold); animation: slotFlash 1.5s ease-out 2; }
+  @keyframes slotFlash {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0); }
+    50% { box-shadow: 0 0 14px rgba(252, 211, 77, 0.7); }
+  }
+  .slot-watch-card .slot-head { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--muted); }
+  .slot-watch-card .slot-head .slot-num { color: var(--gold); font-weight: 700; }
+  .slot-watch-card canvas { width: 100%; height: auto; display: block; background: #000; border-radius: 4px; margin: 4px 0; }
+  .slot-watch-card .slot-label {
+    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    color: var(--text); font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 4px;
+    outline: none; margin: 3px 0;
+  }
+  .slot-watch-card .slot-label:focus { border-color: var(--accent); }
+  .slot-watch-card .slot-meta { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; margin: 2px 0; }
+  .slot-watch-card .slot-meta strong { color: var(--text); font-weight: 600; }
+  .slot-watch-card .slot-actions { display: flex; gap: 4px; margin-top: 4px; }
+  .slot-watch-card .slot-actions button {
+    flex: 1; font: inherit; font-size: 10px; font-weight: 700;
+    padding: 4px 6px; border-radius: 4px; cursor: pointer; border: 1px solid;
+    transition: filter .12s;
+  }
+  .slot-watch-card .slot-actions button:hover { filter: brightness(1.2); }
+  .slot-watch-card .slot-actions .btn-buy { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.4); color: #86efac; }
+  .slot-watch-card .slot-actions .btn-sell { background: rgba(248,113,113,0.16); border-color: rgba(248,113,113,0.4); color: #fca5a5; }
+
+  /* News panel */
+  .news-panel {
+    background: linear-gradient(180deg, rgba(196, 181, 253, 0.06), rgba(125, 211, 252, 0.02));
+    border: 1px solid rgba(196, 181, 253, 0.22);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+  }
+  .news-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .news-header h3 { margin: 0; font-size: 12px; color: var(--accent-2); letter-spacing: 0.1em; text-transform: uppercase; }
+  .news-header .news-count { color: var(--muted); font-size: 11px; flex: 1; }
+  .news-toggle {
+    background: rgba(196,181,253,0.14); border: 1px solid rgba(196,181,253,0.3);
+    color: var(--accent-2); font: inherit; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .news-toggle:hover { filter: brightness(1.2); }
+  .news-list { display: grid; gap: 8px; }
+  .news-list[hidden] { display: none; }
+  .news-item {
+    background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; transition: border-color .15s;
+  }
+  .news-item:hover { border-color: rgba(196,181,253,0.3); }
+  .news-item .news-title { font-size: 12px; font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+  .news-item .news-title a { color: inherit; }
+  .news-item .news-date { font-size: 10px; color: var(--muted); }
+  .news-item .news-snippet { font-size: 11px; color: var(--muted); margin: 4px 0; line-height: 1.4; }
+  .news-item .news-items { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .news-item .news-item-chip {
+    background: rgba(74, 222, 128, 0.14); color: var(--green);
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    font-weight: 600; cursor: pointer;
+    transition: filter .12s;
+  }
+  .news-item .news-item-chip:hover { filter: brightness(1.25); }
+  .news-empty { color: var(--muted); font-size: 11px; padding: 8px 0; text-align: center; }
+
+  .card.tier-hot::before   { background: linear-gradient(180deg, #f87171, #ef4444); }
+  .card.tier-solid::before { background: linear-gradient(180deg, #4ade80, #22c55e); }
+  .card.tier-whale::before { background: linear-gradient(180deg, #fcd34d, #f59e0b); }
+  .card.tier-risky::before { background: linear-gradient(180deg, #fbbf24, #d97706); opacity: 0.6; }
+  .card.tier-dead::before  { background: linear-gradient(180deg, #94a3b8, #64748b); opacity: 0.4; }
+  .card.tier-suspect::before { background: linear-gradient(180deg, #f87171, #b91c1c); }
+  .card.tier-normal::before { background: linear-gradient(180deg, #7dd3fc, #38bdf8); opacity: 0.5; }
+
+  /* SKELETON */
+  .skeleton-row td { padding: 10px 12px; }
+  .skeleton-bar { height: 12px; border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* UPDATE FLASH */
+  @keyframes flashGreen { 0% { background: var(--green-soft); } 100% { background: transparent; } }
+  @keyframes flashRed   { 0% { background: var(--red-soft);   } 100% { background: transparent; } }
+  tr.flash-up td { animation: flashGreen 1.2s ease-out; }
+  tr.flash-dn td { animation: flashRed   1.2s ease-out; }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: grid; place-items: center;
+    padding: 20px;
+    animation: fadeIn .15s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--panel-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 20px 22px;
+    max-width: 740px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-height: 90vh; overflow: auto;
+  }
+  .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .modal-header .icon-wrap { width: 44px; height: 44px; border-radius: 8px; background: rgba(255,255,255,0.04); display: grid; place-items: center; overflow: hidden; }
+  .modal-header .icon-wrap img { width: 40px; height: 40px; object-fit: contain; }
+  .modal-header h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  .modal-header .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .modal-close {
+    margin-left: auto;
+    background: rgba(255,255,255,0.06);
+    border: 0; color: var(--text);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px; line-height: 1;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.12); }
+  .chart-wrap { background: rgba(0,0,0,0.25); border-radius: 8px; padding: 12px; }
+  .chart-wrap svg { display: block; width: 100%; height: 220px; }
+  .chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 11px; color: var(--muted); }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .modal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 14px; }
+  .modal-stats .stat { padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); }
+  .modal-stats .stat .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .modal-stats .stat .value { font-size: 14px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .chart-range { display: flex; gap: 4px; justify-content: center; margin-top: 10px; }
+  .chart-range button { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; border-radius: 6px; font: inherit; font-size: 11px; cursor: pointer; }
+  .chart-range button.active { background: rgba(125,211,252,0.15); color: var(--accent); border-color: rgba(125,211,252,0.3); }
+
+  /* ===== PRICE PILLS (Buy@ / Sell@) ===== */
+  .price-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px; border-radius: 8px;
+    cursor: pointer; position: relative;
+    font-variant-numeric: tabular-nums;
+    transition: transform .1s, filter .1s, box-shadow .1s;
+    user-select: none;
+    border: 1px solid;
+  }
+  .price-pill:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .price-pill[data-side="buy"] {
+    background: linear-gradient(135deg, rgba(74,222,128,0.16), rgba(74,222,128,0.08));
+    border-color: rgba(74,222,128,0.4);
+  }
+  .price-pill[data-side="sell"] {
+    background: linear-gradient(135deg, rgba(248,113,113,0.16), rgba(248,113,113,0.08));
+    border-color: rgba(248,113,113,0.4);
+  }
+  .price-pill .price-side {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .price-pill[data-side="buy"] .price-side { color: #052e16; background: var(--green); }
+  .price-pill[data-side="sell"] .price-side { color: #450a0a; background: var(--red); }
+  .price-pill .price-num { font-weight: 700; font-size: 13px; color: var(--text); }
+  .price-pill.copied { animation: pillFlash .6s; }
+  .price-pill.copied::after {
+    content: "✓ Copied"; position: absolute; top: -22px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--green); color: #0a0d12;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; white-space: nowrap;
+    animation: copyFlash 1.2s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes copyFlash {
+    0% { opacity: 1; transform: translateX(-50%) translateY(2px); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  }
+  @keyframes pillFlash { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.6); } }
+
+  /* Big Buy/Sell pair in cards */
+  .card .price-pair { display: flex; gap: 6px; margin-top: 8px; }
+  .card .price-pair .price-pill { flex: 1; justify-content: center; }
+  .card .price-pair .price-pill .price-num { font-size: 14px; }
+
+  /* ===== STAR / WATCHLIST ===== */
+  .star-btn {
+    background: transparent; border: 0;
+    color: var(--dim); cursor: pointer;
+    font-size: 17px; line-height: 1;
+    padding: 0 4px;
+    transition: color .15s, transform .1s;
+    margin-right: 2px;
+  }
+  .star-btn:hover { color: var(--gold); transform: scale(1.25); }
+  .star-btn.on { color: var(--gold); text-shadow: 0 0 8px rgba(252, 211, 77, 0.5); }
+
+  .watchlist-panel {
+    background: linear-gradient(180deg, rgba(252, 211, 77, 0.08), rgba(252, 211, 77, 0.02));
+    border: 1px solid rgba(252, 211, 77, 0.25);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+  }
+  .watchlist-panel h3 { margin: 0 0 10px; font-size: 12px; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; }
+  .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .watch-card {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+    transition: border-color .15s;
+  }
+  .watch-card:hover { border-color: rgba(252, 211, 77, 0.4); }
+  .watch-card .head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .watch-card .head .icon-wrap { width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.04); display: grid; place-items: center; overflow: hidden; flex-shrink: 0; }
+  .watch-card .head .icon-wrap img { width: 26px; height: 26px; object-fit: contain; }
+  .watch-card .head .name { font-weight: 600; font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .watch-card .head .star-btn { font-size: 14px; }
+  .watch-card .row { display: flex; gap: 6px; }
+  .watch-card .row .price-pill { flex: 1; justify-content: center; padding: 3px 8px; }
+  .watch-card .row .price-pill .price-num { font-size: 12px; }
+  .watch-card .meta { margin-top: 6px; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .watch-card .meta .alert-input {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 10px;
+    padding: 1px 5px; width: 70px; outline: none;
+  }
+  .watch-card .meta .alert-input:focus { border-color: var(--gold); }
+  .watch-card.firing { border-color: var(--gold); box-shadow: 0 0 16px rgba(252, 211, 77, 0.35); animation: alertGlow 1s ease-out 3; }
+  @keyframes alertGlow { 0%, 100% { box-shadow: 0 0 16px rgba(252, 211, 77, 0.35); } 50% { box-shadow: 0 0 24px rgba(252, 211, 77, 0.7); } }
+
+  .watchlist-empty { color: var(--muted); font-size: 12px; padding: 12px 0; text-align: center; }
+
+  /* Position tracking inside watch card */
+  .mark-bought-btn {
+    background: linear-gradient(135deg, rgba(74,222,128,0.18), rgba(74,222,128,0.10));
+    border: 1px solid rgba(74,222,128,0.35);
+    color: var(--green);
+    font: inherit; font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px;
+    cursor: pointer;
+    transition: filter .12s, transform .1s;
+    white-space: nowrap;
+  }
+  .mark-bought-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .watch-card.has-position { border-color: rgba(252, 211, 77, 0.4); background: rgba(252, 211, 77, 0.04); }
+  .pos-row {
+    display: flex; align-items: center; gap: 6px; margin-top: 8px;
+    font-size: 11px; color: var(--muted);
+    background: rgba(0,0,0,0.25); border-radius: 6px; padding: 6px 8px;
+  }
+  .pos-row input {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    color: var(--text); padding: 2px 6px; border-radius: 4px;
+    font: inherit; font-size: 11px; outline: none;
+  }
+  .pos-row input:focus { border-color: var(--gold); }
+  .pos-row .pos-price-input { width: 86px; font-variant-numeric: tabular-nums; }
+  .pos-row .pos-qty-input { width: 56px; font-variant-numeric: tabular-nums; }
+  .pos-row .pos-close-btn {
+    margin-left: auto;
+    background: rgba(248, 113, 113, 0.12); border: 0;
+    color: #fca5a5; padding: 2px 8px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+  }
+  .pos-row .pos-close-btn:hover { background: rgba(248, 113, 113, 0.22); }
+  .pos-status {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 6px; font-size: 11px; gap: 8px;
+  }
+  .pos-pnl { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .pos-advice {
+    margin-top: 6px; padding: 6px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; line-height: 1.4;
+  }
+  .pos-advice.level-sell-now      { background: rgba(74, 222, 128, 0.18); color: #86efac; border: 1px solid rgba(74,222,128,0.25); }
+  .pos-advice.level-hold-profit   { background: rgba(252, 211, 77, 0.12); color: #fcd34d; border: 1px solid rgba(252,211,77,0.25); }
+  .pos-advice.level-hold-recover  { background: rgba(125, 211, 252, 0.10); color: #7dd3fc; border: 1px solid rgba(125,211,252,0.25); }
+  .pos-advice.level-cut-loss      { background: rgba(248, 113, 113, 0.14); color: #fca5a5; border: 1px solid rgba(248,113,113,0.25); }
+
+  /* ===== ALL-DOSE DECANT BADGE ===== */
+  .decant-arrow { display: inline-block; padding: 1px 6px; border-radius: 4px; background: rgba(125, 211, 252, 0.14); color: var(--accent); font-size: 10px; font-weight: 700; margin-left: 6px; }
+
+  footer { padding: 14px 22px 22px; color: var(--dim); font-size: 11px; text-align: center; }
+  footer .sep { margin: 0 8px; color: var(--border-strong); }
+
+  @media (max-width: 900px) {
+    .field.search input { width: 130px; }
+    main { padding: 14px; }
+    .table-scroll { max-height: 60vh; }
+    thead th, tbody td { padding: 8px 8px; font-size: 11px; }
+    .item-cell { min-width: 160px; }
+    .tabs { width: 100%; order: 3; margin-left: 0; }
+  }
+
+  /* ===== VIEW-MODE PICKER MODAL (first-load only) ===== */
+  .view-picker-backdrop {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    display: grid; place-items: center; padding: 20px;
+  }
+  .view-picker {
+    background: var(--panel-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    padding: 28px 24px;
+    max-width: 440px; width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .view-picker h2 {
+    margin: 0 0 6px; font-size: 18px; font-weight: 700;
+    background: linear-gradient(90deg, #fff, #c4b5fd);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .view-picker .sub { color: var(--muted); font-size: 12px; margin-bottom: 22px; }
+  .view-picker-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .view-picker-option {
+    background: rgba(255,255,255,0.03);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 14px; cursor: pointer;
+    transition: border-color .15s, transform .12s, background .15s;
+    color: var(--text); font: inherit;
+  }
+  .view-picker-option:hover { border-color: var(--accent); transform: translateY(-2px); background: rgba(125,211,252,0.06); }
+  .view-picker-option.suggested { border-color: var(--accent); background: rgba(125,211,252,0.08); }
+  .view-picker-option .vp-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+  .view-picker-option .vp-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .view-picker-option .vp-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .view-picker-option .vp-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: #0a0d12; font-weight: 700; margin-top: 6px; }
+
+  /* View-mode toggle button in header */
+  .view-toggle {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--muted); padding: 4px 10px; border-radius: 8px;
+    font: inherit; font-size: 12px; cursor: pointer;
+    transition: color .12s, background .12s;
+  }
+  .view-toggle:hover { color: var(--text); background: rgba(255,255,255,0.10); }
+
+  /* ===== MOBILE VIEW STYLES ===== */
+  body.mobile-view header {
+    padding: 10px 12px; gap: 8px;
+  }
+  body.mobile-view .brand .tag { display: none; }
+  body.mobile-view .brand h1 { font-size: 14px; }
+  body.mobile-view .brand .logo { width: 26px; height: 26px; font-size: 14px; }
+  body.mobile-view .tabs {
+    width: 100%; order: 4; margin-left: 0;
+    overflow-x: auto; flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  body.mobile-view .tabs::-webkit-scrollbar { height: 3px; }
+  body.mobile-view .tab { font-size: 12px; padding: 6px 12px; flex-shrink: 0; white-space: nowrap; }
+  body.mobile-view .status-wrap { gap: 8px; }
+  body.mobile-view .status { font-size: 11px; }
+  body.mobile-view #status-text { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Controls collapsed on mobile (expand button) */
+  body.mobile-view .controls {
+    padding: 8px 10px; gap: 6px;
+    top: 110px; /* below taller mobile header */
+  }
+  body.mobile-view .controls.collapsed > * { display: none; }
+  body.mobile-view .controls.collapsed > .mobile-filter-bar { display: flex; }
+  body.mobile-view .mobile-filter-bar {
+    display: none; width: 100%; align-items: center; gap: 8px;
+  }
+  body.desktop-view .mobile-filter-bar { display: none !important; }
+  body.mobile-view .mobile-filter-toggle {
+    background: rgba(125,211,252,0.12); border: 1px solid rgba(125,211,252,0.3);
+    color: var(--accent); padding: 6px 12px; border-radius: 999px;
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    flex: 1;
+  }
+  body.mobile-view .field { padding: 4px 10px; font-size: 11px; }
+  body.mobile-view .field input, body.mobile-view .field select { font-size: 12px; }
+  body.mobile-view .field.search input { width: 100%; }
+  body.mobile-view .field.search { flex: 1 1 100%; }
+
+  /* Main content */
+  body.mobile-view main { padding: 10px 10px 24px; }
+  body.mobile-view section { margin-bottom: 14px; }
+  body.mobile-view .section-header h2 { font-size: 11px; }
+  body.mobile-view .section-header .hint { display: none; }
+
+  /* Cash panel: stack stats vertically */
+  body.mobile-view .cash-panel .summary { gap: 14px; }
+  body.mobile-view .cash-panel .summary .value { font-size: 15px; }
+  body.mobile-view .slot-grid { grid-template-columns: 1fr; }
+
+  /* Top cards: single column on phones, 2 on small tablets */
+  body.mobile-view .top-cards { grid-template-columns: 1fr; gap: 8px; }
+  body.mobile-view .card { padding: 10px 12px; }
+  body.mobile-view .card .margin { font-size: 16px; }
+
+  /* Watchlist */
+  body.mobile-view .watchlist-grid { grid-template-columns: 1fr; }
+  body.mobile-view .watch-card .row .price-pill { padding: 4px 10px; }
+  body.mobile-view .watch-card .row .price-pill .price-num { font-size: 13px; }
+
+  /* MAIN TABLE → CARDS on mobile */
+  body.mobile-view .table-wrap { background: transparent; border: 0; }
+  body.mobile-view .table-scroll { max-height: none; overflow: visible; }
+  body.mobile-view #tbl,
+  body.mobile-view #tbl tbody { display: block; }
+  body.mobile-view #tbl thead { display: none; }
+  body.mobile-view #tbl tbody tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "star item"
+      "buy  sell"
+      "net  perhr"
+      "extra extra";
+    column-gap: 8px; row-gap: 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  body.mobile-view #tbl tbody tr:hover td { background: transparent; }
+  body.mobile-view #tbl tbody td { display: block; padding: 0; border: 0; text-align: left; }
+  body.mobile-view #tbl tbody td:nth-child(1) { grid-area: star; }       /* star */
+  body.mobile-view #tbl tbody td:nth-child(2) { grid-area: item; }       /* item cell */
+  body.mobile-view #tbl tbody td:nth-child(3),
+  body.mobile-view #tbl tbody td:nth-child(4),
+  body.mobile-view #tbl tbody td:nth-child(8),
+  body.mobile-view #tbl tbody td:nth-child(9),
+  body.mobile-view #tbl tbody td:nth-child(10),
+  body.mobile-view #tbl tbody td:nth-child(11),
+  body.mobile-view #tbl tbody td:nth-child(13),
+  body.mobile-view #tbl tbody td:nth-child(14),
+  body.mobile-view #tbl tbody td:nth-child(15) { display: none; }
+  body.mobile-view #tbl tbody td:nth-child(5) { grid-area: buy; }        /* Buy@ */
+  body.mobile-view #tbl tbody td:nth-child(6) { grid-area: sell; }       /* Sell@ */
+  body.mobile-view #tbl tbody td:nth-child(7) { grid-area: net;          /* Net */
+    font-size: 13px; font-weight: 700; padding-top: 4px;
+  }
+  body.mobile-view #tbl tbody td:nth-child(7)::before { content: "Net "; color: var(--muted); font-size: 10px; font-weight: 500; }
+  body.mobile-view #tbl tbody td:nth-child(12) { grid-area: perhr;       /* Est gp/hr */
+    font-size: 13px; font-weight: 700; text-align: right; padding-top: 4px;
+  }
+  body.mobile-view #tbl tbody td:nth-child(12)::before { content: "gp/hr "; color: var(--muted); font-size: 10px; font-weight: 500; }
+  body.mobile-view #tbl tbody .item-cell { min-width: 0; gap: 8px; flex-wrap: wrap; }
+  body.mobile-view #tbl tbody .item-cell .item-name { font-size: 13px; }
+  body.mobile-view #tbl tbody .price-pill { width: 100%; justify-content: space-between; padding: 6px 12px; }
+  body.mobile-view #tbl tbody .price-pill .price-num { font-size: 14px; }
+  body.mobile-view #tbl tbody .star-btn { font-size: 22px; padding: 0 4px; }
+  body.mobile-view #row-count { font-size: 11px; }
+
+  /* Simple-table mobile (alch/sets/decant/herbs) — keep horizontal scroll but smaller */
+  body.mobile-view .simple-table { font-size: 11px; min-width: 600px; }
+  body.mobile-view .simple-table thead th { padding: 6px 8px; font-size: 9px; }
+  body.mobile-view .simple-table tbody td { padding: 6px 8px; }
+
+  /* News panel */
+  body.mobile-view .news-panel { padding: 10px 12px; }
+
+  /* Modal */
+  body.mobile-view .modal { padding: 14px; max-height: 95vh; }
+  body.mobile-view .modal-stats { grid-template-columns: 1fr 1fr; }
+  body.mobile-view .chart-wrap svg { height: 180px; }
+
+  /* DESKTOP VIEW small tweaks — when explicitly desktop, disable any auto-stacking */
+  body.desktop-view .mobile-filter-bar { display: none; }
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">G</div>
+    <h1>OSRS Flipper</h1>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-target="flipping">⚡ Flipping</button>
+    <button class="tab" data-target="alching">🪄 Alching</button>
+    <button class="tab" data-target="sets">🛡️ Sets</button>
+    <button class="tab" data-target="decanting">🧪 Decanting</button>
+    <button class="tab" data-target="herbs">🌿 Herbs</button>
+  </div>
+  <div class="status-wrap">
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">Loading…</span></div>
+    <div class="refresh-ring" id="ring" title="Next refresh"><span id="ring-text">--</span></div>
+    <button class="view-toggle" id="view-toggle" title="Switch view mode">💻</button>
+  </div>
+</header>
+
+<!-- ============== FLIPPING TAB ============== -->
+<div class="tab-pane" data-tab="flipping">
+  <div class="controls" id="flipping-controls">
+    <div class="mobile-filter-bar">
+      <button class="mobile-filter-toggle" id="mobile-filter-toggle">⚙ Show filters &amp; strategy</button>
+    </div>
+    <div class="field strategy" title="Reliable = hide unstable items, rank by stability×profit. Max gp/hr = current behavior. Discount Hunter = only items currently below their 24h average.">
+      <label>Strategy</label>
+      <select id="strategy">
+        <option value="reliable">🎯 Reliable</option>
+        <option value="max">⚡ Max gp/hr</option>
+        <option value="discount">📈 Discount Hunter</option>
+        <option value="brewing">🔮 Brewing Deals</option>
+        <option value="bigmover">🚀 Big Movers (volume surge)</option>
+        <option value="position">💎 Position Trades (long hold)</option>
+      </select>
+    </div>
+    <div class="field search">
+      <span>🔍</span>
+      <input type="text" id="search" placeholder="Search items…" />
+    </div>
+    <div class="field wide" title="Your available cash. 0 = no cash filter.">
+      <label>💰 Cash</label>
+      <input type="text" id="cash" value="0" placeholder="e.g. 50m" />
+    </div>
+    <div class="field" title="Number of GE slots to plan around (8 P2P, 3 F2P)">
+      <label>Slots</label>
+      <input type="number" id="slots" value="8" min="1" max="8" />
+    </div>
+    <div class="field" title="Hides items where the slower side (buy or sell) is below this — keeps it tradeable">
+      <label>Min vol/hr</label>
+      <input type="number" id="minVol" value="0" min="0" step="10" />
+    </div>
+    <div class="field">
+      <label>Max stale</label>
+      <input type="number" id="maxStale" value="60" min="1" step="1" />
+      <span class="dim">min</span>
+    </div>
+    <div class="field">
+      <label>Members</label>
+      <select id="members">
+        <option value="all" selected>All</option>
+        <option value="f2p">F2P only</option>
+        <option value="p2p">Members only</option>
+      </select>
+    </div>
+    <div class="field" title="Minimum flat gp to under/overcut by (the floor)">
+      <label>Cut</label>
+      <input type="number" id="cut" value="1" min="0" step="1" />
+      <span class="dim">gp</span>
+    </div>
+    <div class="field" title="Aggressiveness: how much to overcut/undercut as a % of price. Auto-capped at 1.5% of the margin per side (3% combined) so at least 97% of profit is preserved. Set to 0 for pure flat-cut behavior.">
+      <label>Edge</label>
+      <input type="number" id="edge" value="0.05" min="0" max="5" step="0.05" />
+      <span class="dim">%</span>
+    </div>
+    <label class="field check"><input type="checkbox" id="hideZero" checked /> Positive only</label>
+    <label class="field check"><input type="checkbox" id="hideSus" checked /> Hide suspect prices</label>
+  </div>
+
+  <main>
+    <!-- RuneLite integration recommendation -->
+    <section>
+      <div class="watcher-panel">
+        <div class="watcher-header" style="align-items: flex-start;">
+          <h3>🔗 Position Tracking — Use RuneLite</h3>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: var(--text); line-height: 1.6;">
+          For live offer tracking and automatic P&amp;L, install <a href="https://runelite.net" target="_blank" rel="noopener"><strong>RuneLite</strong></a> + the <strong>Flipping Utilities</strong> plugin from the Plugin Hub. It reads your real GE state directly from the game — perfect accuracy, no screenshots, no typing.
+          <div style="margin-top: 10px; padding: 10px 12px; background: rgba(0,0,0,0.25); border-radius: 8px; font-size: 11px; color: var(--muted);">
+            <strong style="color: var(--accent);">Recommended workflow:</strong><br>
+            <strong style="color: var(--text);">This dashboard</strong> → scan everything, surface Big Movers / Brewing Deals / discounts, build the slot plan, set alerts.<br>
+            <strong style="color: var(--text);">RuneLite (Flipping Utilities)</strong> → tracks your actual offers in-game, live P&amp;L, fill notifications, hands-free.
+          </div>
+          <div style="margin-top: 8px; font-size: 11px; color: var(--dim);">
+            Setup: install RuneLite → Plugin Hub → search "Flipping Utilities" → enable. That's it.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OSRS News (speculation source) -->
+    <section>
+      <div class="news-panel">
+        <div class="news-header">
+          <h3>📰 OSRS News &amp; Updates</h3>
+          <div class="news-count" id="news-count">Loading…</div>
+          <button class="news-toggle" id="news-toggle">Hide</button>
+        </div>
+        <div class="news-list" id="news-list"></div>
+        <div class="news-empty" id="news-empty" hidden>News feed unavailable right now. Jagex's RSS endpoint may be blocked by CORS — refresh to retry.</div>
+      </div>
+    </section>
+
+    <!-- Watchlist -->
+    <section id="watchlist-section" hidden>
+      <div class="watchlist-panel">
+        <h3>⭐ Watchlist</h3>
+        <div class="watchlist-grid" id="watchlist-grid"></div>
+      </div>
+    </section>
+
+    <!-- Cash & Slot Plan -->
+    <section id="cash-section" hidden>
+      <div class="cash-panel">
+        <h3>💼 Your Optimal Slot Plan <span style="font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0;font-size:11px">— one full 4-hour GE cycle</span></h3>
+        <div class="summary">
+          <div class="stat"><div class="label">Bank</div><div class="value gold" id="bankDisplay">0</div></div>
+          <div class="stat"><div class="label">Cash deployed / cycle</div><div class="value" id="planDeployed">0</div></div>
+          <div class="stat"><div class="label">Expected profit</div><div class="value green" id="planGpHr">0</div></div>
+          <div class="stat"><div class="label">Slots used</div><div class="value" id="planSlots">0/0</div></div>
+        </div>
+        <div class="slot-grid" id="slot-grid"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <h2>⚡ Best Money Right Now</h2>
+        <div class="hint">ranked by realistic gp/hr · click any row for a price chart</div>
+      </div>
+      <div class="top-cards" id="top-cards">
+        <div class="card empty"><div class="sub">Loading market…</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <h2>📊 All Opportunities</h2>
+        <div class="hint" id="row-count">—</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th style="width: 28px"></th>
+                <th class="left" data-key="name">Item</th>
+                <th data-key="low" title="Latest instabuy price reported by GE">Buy (low)</th>
+                <th data-key="high" title="Latest instasell price reported by GE">Sell (high)</th>
+                <th data-key="buyAt" title="Overcut: place buy offer at low + cut to get filled fast">Buy@</th>
+                <th data-key="sellAt" title="Undercut: place sell offer at high − cut to get filled fast">Sell@</th>
+                <th data-key="net" title="Realized profit per item = Sell@ − tax − Buy@">Net</th>
+                <th data-key="roi" title="Net / Buy@ × 100">ROI %</th>
+                <th data-key="limit">Limit</th>
+                <th data-key="buyVol">Buy vol</th>
+                <th data-key="sellVol">Sell vol</th>
+                <th data-key="expectedHourlyProfit" class="sorted" title="Realistic gp/hr = min(buy vol, sell vol, limit/4) × Net">Est gp/hr</th>
+                <th data-key="stability" title="0–100 score. Higher = more predictable: price near 24h avg, spread consistent, healthy volume.">Stab</th>
+                <th data-key="lowAgeSort">Buy age</th>
+                <th data-key="highAgeSort">Sell age</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr class="skeleton-row"><td colspan="15"><div class="skeleton-bar"></div></td></tr>
+              <tr class="skeleton-row"><td colspan="15"><div class="skeleton-bar" style="width: 80%"></div></td></tr>
+              <tr class="skeleton-row"><td colspan="15"><div class="skeleton-bar" style="width: 65%"></div></td></tr>
+              <tr class="skeleton-row"><td colspan="15"><div class="skeleton-bar" style="width: 90%"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============== ALCHING TAB ============== -->
+<div class="tab-pane" data-tab="alching" hidden>
+  <div class="controls">
+    <div class="field search">
+      <span>🔍</span>
+      <input type="text" id="alch-search" placeholder="Search items…" />
+    </div>
+    <div class="field">
+      <label>Min profit/cast</label>
+      <input type="number" id="alch-minProfit" value="0" min="0" step="10" />
+    </div>
+    <div class="field wide" title="Your bank (uses last item buy price to figure out how many you can cast)">
+      <label>💰 Cash</label>
+      <input type="text" id="alch-cash" value="0" placeholder="e.g. 5m" />
+    </div>
+    <div class="field">
+      <label>Members</label>
+      <select id="alch-members">
+        <option value="all" selected>All</option>
+        <option value="f2p">F2P only</option>
+        <option value="p2p">Members only</option>
+      </select>
+    </div>
+  </div>
+  <main>
+    <section>
+      <div class="section-header">
+        <h2>🪄 High Alch Profit (per cast)</h2>
+        <div class="hint">Profit = highalch − buy price − nature rune · ~1,200 casts/hr theoretical</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="simple-table" id="alch-tbl">
+            <thead>
+              <tr>
+                <th class="left" data-key="name">Item</th>
+                <th data-key="buyAt">Buy@</th>
+                <th data-key="highalch">High alch</th>
+                <th data-key="natRunePrice">Nat rune</th>
+                <th data-key="profit" class="sorted">Profit/cast</th>
+                <th data-key="buyVol">Buy vol/hr</th>
+                <th data-key="limit">Limit</th>
+                <th data-key="gpHr">Est gp/hr</th>
+              </tr>
+            </thead>
+            <tbody id="alch-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============== SETS TAB ============== -->
+<div class="tab-pane" data-tab="sets" hidden>
+  <div class="controls">
+    <div class="field" title="Hides sets with no parts available or zero profit">
+      <label>Min profit</label>
+      <input type="number" id="sets-minProfit" value="0" min="0" step="1000" />
+    </div>
+  </div>
+  <main>
+    <section>
+      <div class="section-header">
+        <h2>🛡️ Armor Set Arbitrage</h2>
+        <div class="hint">Combine pieces → sell set, or buy set → sell pieces. Whichever pays more is shown as "Best action".</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="simple-table" id="sets-tbl">
+            <thead>
+              <tr>
+                <th class="left" data-key="name">Set</th>
+                <th data-key="combineCost">Combine cost</th>
+                <th data-key="combineSell">Sell set at</th>
+                <th data-key="combineProfit">Combine net</th>
+                <th data-key="decombineCost">Buy set at</th>
+                <th data-key="decombineSell">Sell parts at</th>
+                <th data-key="decombineProfit">Decombine net</th>
+                <th data-key="bestProfit" class="sorted">Best</th>
+                <th data-key="bestAction" class="left">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sets-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============== DECANTING TAB ============== -->
+<div class="tab-pane" data-tab="decanting" hidden>
+  <div class="controls">
+    <div class="field search">
+      <span>🔍</span>
+      <input type="text" id="decant-search" placeholder="Search potions…" />
+    </div>
+    <div class="field">
+      <label>Min profit/4-dose</label>
+      <input type="number" id="decant-minProfit" value="0" min="0" step="10" />
+    </div>
+    <div class="field">
+      <label>Min sell vol</label>
+      <input type="number" id="decant-minVol" value="0" min="0" step="10" />
+    </div>
+  </div>
+  <main>
+    <section>
+      <div class="section-header">
+        <h2>🧪 Potion Decanting (best dose conversion)</h2>
+        <div class="hint">All-dose decants. Each row shows the best from→to ratio for that potion family. Requires Herblore + Bob Barter / barbarian herblore.</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="simple-table" id="decant-tbl">
+            <thead>
+              <tr>
+                <th class="left" data-key="name">Potion (from→to)</th>
+                <th data-key="buy4">Buy from-dose@</th>
+                <th data-key="sell3">Sell to-dose@</th>
+                <th data-key="costPer">Cost / cycle</th>
+                <th data-key="proceedsPer">Net proceeds</th>
+                <th data-key="profitPerCycle" class="sorted">Profit/cycle</th>
+                <th data-key="profitPer4">Profit per unit bought</th>
+                <th data-key="volBuy">From buy vol</th>
+                <th data-key="volSell">To sell vol</th>
+              </tr>
+            </thead>
+            <tbody id="decant-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============== HERBS TAB ============== -->
+<div class="tab-pane" data-tab="herbs" hidden>
+  <div class="controls">
+    <div class="field search">
+      <span>🔍</span>
+      <input type="text" id="herbs-search" placeholder="Search herbs…" />
+    </div>
+    <div class="field">
+      <label>Min profit</label>
+      <input type="number" id="herbs-minProfit" value="0" min="0" step="10" />
+    </div>
+    <div class="field">
+      <label>Min vol</label>
+      <input type="number" id="herbs-minVol" value="0" min="0" step="10" />
+    </div>
+  </div>
+  <main>
+    <section>
+      <div class="section-header">
+        <h2>🌿 Herb Cleaning</h2>
+        <div class="hint">Buy grimy herb → clean (1 tick each) → sell. Requires the Herblore level for that herb.</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="simple-table" id="herbs-tbl">
+            <thead>
+              <tr>
+                <th class="left" data-key="name">Herb</th>
+                <th data-key="buyGrimy">Buy grimy@</th>
+                <th data-key="sellClean">Sell clean@</th>
+                <th data-key="profitPer" class="sorted">Profit/ea</th>
+                <th data-key="roi">ROI %</th>
+                <th data-key="limit">Limit</th>
+                <th data-key="volGrimy">Grimy buy vol</th>
+                <th data-key="volClean">Clean sell vol</th>
+                <th data-key="gpHr">Est gp/hr</th>
+              </tr>
+            </thead>
+            <tbody id="herbs-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+
+<footer>
+  Data: <a href="https://prices.runescape.wiki/" target="_blank" rel="noopener">prices.runescape.wiki</a>
+  <span class="sep">·</span> Icons: <a href="https://oldschool.runescape.wiki/" target="_blank" rel="noopener">OSRS Wiki</a>
+  <span class="sep">·</span> Refreshes every 20s
+  <span class="sep">·</span> Surfaces opportunities only — place offers manually in-game
+</footer>
+
+<script>
+  const API = "https://prices.runescape.wiki/api/v1/osrs";
+  const ICON_BASE = "https://oldschool.runescape.wiki/w/Special:Filepath/";
+  const JAGEX_GRAPH = "https://secure.runescape.com/m=itemdb_oldschool/api/graph/";
+  const CORS_PROXY = "https://corsproxy.io/?";
+  const FAST_REFRESH_MS = 6000;   // /latest poll
+  const MID_REFRESH_MS = 30000;   // /5m poll
+  const SLOW_REFRESH_MS = 60000;  // /1h + /24h poll
+  const HISTORY_LIMIT = 60;       // in-memory ticks per item (~6 min @ 6s)
+  const NATURE_RUNE_ID = 561;
+  const ALCH_CASTS_PER_HR = 1200;
+
+  // Hardcoded armor sets: setId -> { name, partIds }
+  const ARMOR_SETS = {
+    11890: { name: "Bandos armour set",     parts: [11832, 11834] },
+    11894: { name: "Armadyl armour set",    parts: [11826, 11828, 11830] },
+    11892: { name: "Dharok's armour set",   parts: [4716, 4720, 4722, 4718] },
+    11924: { name: "Ahrim's armour set",    parts: [4708, 4712, 4714, 4710] },
+    11898: { name: "Verac's armour set",    parts: [4753, 4757, 4759, 4755] },
+    11896: { name: "Torag's armour set",    parts: [4745, 4749, 4751, 4747] },
+    11926: { name: "Karil's armour set",    parts: [4732, 4736, 4738, 4734] },
+    11900: { name: "Guthan's armour set",   parts: [4724, 4728, 4730, 4726] },
+    22438: { name: "Justiciar armour set",  parts: [22326, 22327, 22328] },
+    24488: { name: "Inquisitor's armour set", parts: [24419, 24420, 24421] },
+    21049: { name: "Ancestral robes set",   parts: [21018, 21021, 21024] },
+    13070: { name: "3rd age melee set",     parts: [10350, 10348, 10346, 10352] },
+    13068: { name: "3rd age range set",     parts: [10334, 10330, 10332, 10328] },
+    13072: { name: "3rd age mage set",      parts: [10342, 10338, 10336, 10340] },
+  };
+
+  // GE tax: 2% of sell price, floored, capped at 5,000,000 gp per item.
+  // Anything <50 gp naturally rounds to 0 tax. Rate changed from 1% to 2% on 2025-05-29.
+  const GE_TAX_RATE = 0.02;
+  const GE_TAX_CAP = 5_000_000;
+  function geTax(sellPrice) {
+    return Math.min(Math.floor(sellPrice * GE_TAX_RATE), GE_TAX_CAP);
+  }
+  function afterTax(sellPrice) { return sellPrice - geTax(sellPrice); }
+
+  // GE tax exemption list — items that sell tax-free on the GE.
+  // Source: oldschool.runescape.wiki/w/Grand_Exchange#Tax
+  // Resolved to IDs lazily from /mapping so we don't have to guess.
+  const TAX_EXEMPT_NAMES = new Set([
+    // Bonds
+    "Old school bond",
+    // Tools
+    "Chisel", "Gardening trowel", "Glassblowing pipe", "Hammer", "Needle",
+    "Pestle and mortar", "Rake", "Saw", "Secateurs", "Seed dibber",
+    "Shears", "Spade", "Watering can", "Tinderbox", "Knife",
+    // Combat consumables
+    "Bronze arrow", "Iron arrow", "Steel arrow",
+    "Bronze dart", "Iron dart", "Steel dart",
+    "Mind rune",
+    // Food
+    "Bass", "Bread", "Cake", "Cooked chicken", "Cooked meat", "Herring",
+    "Lobster", "Mackerel", "Meat pie", "Pike", "Salmon", "Shrimps", "Tuna",
+    // Energy potion — all doses
+    "Energy potion(1)", "Energy potion(2)", "Energy potion(3)", "Energy potion(4)",
+    // Teleport tablets
+    "Ardougne teleport", "Camelot teleport", "Civitas illa fortis teleport",
+    "Falador teleport", "Kourend castle teleport", "Lumbridge teleport",
+    "Varrock teleport", "Teleport to house",
+    // Charged jewellery (only fully-charged tradeable variants)
+    "Ring of dueling(8)", "Games necklace(8)",
+  ]);
+  let _taxExemptIds = null;
+  function getTaxExemptIds() {
+    if (_taxExemptIds) return _taxExemptIds;
+    _taxExemptIds = new Set();
+    for (const item of Object.values(state.mapping || {})) {
+      if (TAX_EXEMPT_NAMES.has(item.name)) _taxExemptIds.add(item.id);
+    }
+    return _taxExemptIds;
+  }
+  function geTaxFor(itemId, sellPrice) {
+    if (getTaxExemptIds().has(+itemId)) return 0;
+    return geTax(sellPrice);
+  }
+
+  // ===== EXTRA PER-ITEM FEES (e.g. bond conversion) =====
+  // Bonds carry a 10% conversion fee on the buy side. Buying a bond on the GE
+  // and re-listing it costs 10% of the bond's value, which makes most bond
+  // flips unprofitable. Wiki: "buying a bond with GP and then immediately
+  // re-selling it is usually not profitable due to the conversion fees."
+  const CONVERSION_FEE_NAMES = new Map([
+    ["Old school bond", 0.10],
+  ]);
+  let _convFees = null; // id -> fraction
+  function getConvFeesByName() {
+    if (_convFees) return _convFees;
+    _convFees = new Map();
+    for (const item of Object.values(state.mapping || {})) {
+      if (CONVERSION_FEE_NAMES.has(item.name)) {
+        _convFees.set(item.id, CONVERSION_FEE_NAMES.get(item.name));
+      }
+    }
+    return _convFees;
+  }
+  function conversionFee(itemId, buyPrice) {
+    const frac = getConvFeesByName().get(+itemId);
+    if (!frac || !buyPrice) return 0;
+    return Math.ceil(buyPrice * frac);
+  }
+  function hasConversionFee(itemId) {
+    return getConvFeesByName().has(+itemId);
+  }
+
+  // ===== BUY/SELL BUMP CALCULATIONS =====
+  // Cut = flat-gp floor (the minimum). Edge = % of price (scales with item size).
+  // Each side is capped at 1.5% of the margin so combined worst-case bump is 3%,
+  // preserving at least 97% of raw margin. Bumps round DOWN (favor your wallet).
+  const PER_SIDE_MARGIN_CAP = 0.015;
+  function priceCfg() {
+    return {
+      cut: Math.max(0, +($("#cut")?.value || 0)),
+      edge: Math.max(0, +($("#edge")?.value || 0)),
+    };
+  }
+  function buyBumpFor(low, high, cfg) {
+    cfg = cfg || priceCfg();
+    const margin = Math.max(0, high - low);
+    const maxBump = Math.floor(margin * PER_SIDE_MARGIN_CAP);
+    const pctBump = Math.floor(low * cfg.edge / 100);
+    return Math.max(cfg.cut, Math.min(maxBump, pctBump));
+  }
+  function sellBumpFor(low, high, cfg) {
+    cfg = cfg || priceCfg();
+    const margin = Math.max(0, high - low);
+    const maxBump = Math.floor(margin * PER_SIDE_MARGIN_CAP);
+    const pctBump = Math.floor(high * cfg.edge / 100);
+    return Math.max(cfg.cut, Math.min(maxBump, pctBump));
+  }
+
+  // Parse "50m", "1.5b", "250k", "1,000,000" into a number
+  function parseCash(s) {
+    if (typeof s !== "string") return +s || 0;
+    s = s.trim().toLowerCase().replace(/,/g, "");
+    if (!s) return 0;
+    const m = s.match(/^([\d.]+)\s*([kmb])?$/);
+    if (!m) return 0;
+    let n = +m[1];
+    if (m[2] === "k") n *= 1e3;
+    else if (m[2] === "m") n *= 1e6;
+    else if (m[2] === "b") n *= 1e9;
+    return Math.round(n);
+  }
+
+  const state = {
+    mapping: {},
+    prices: {},          // /latest: id -> { high, low, highTime, lowTime }
+    prices5m: {},        // /5m: id -> { avgHighPrice, highPriceVolume, avgLowPrice, lowPriceVolume }
+    prices1h: {},        // /1h: same shape
+    prices24h: {},       // /24h: same shape
+    history: {},         // id -> [{ts, low, high}, ...] last HISTORY_LIMIT entries (in-memory tick history)
+    velocity: {},        // id -> { lowSlope, highSlope, recentLowDelta, recentHighDelta } gp/min
+    jagexCache: {},      // id -> { data: [...], ts } 180-day daily history (lazy)
+    volumes: {},         // id -> { buy, sell }
+    prevMargins: {},
+    potionFamilies: null,
+    herbFamilies: null,
+    timeseriesCache: {}, // id -> { 1h: [...], 5m: [...], ts: Date }
+    sortKey: "expectedHourlyProfit",
+    sortDir: "desc",
+    activeTab: "flipping",
+    lastUpdate: null,
+    nextRefreshAt: null,
+    alchSort: { key: "profit", dir: "desc" },
+    setsSort: { key: "bestProfit", dir: "desc" },
+    decantSort: { key: "profitPerCycle", dir: "desc" },
+    herbsSort: { key: "profitPer", dir: "desc" },
+    watch: new Set(),    // watched item IDs
+    alertTargets: {},    // id -> minimum net gp/ea that triggers an alert
+    lastAlertFired: {},  // id -> timestamp (prevent spam)
+    positions: {},       // id -> { buyPrice, qty, boughtAt } — your actual recorded purchases
+  };
+
+  // ===== PRICE PILL HELPER =====
+  function pricePill(side, price) {
+    if (price == null || !isFinite(price)) return '<span class="dim">—</span>';
+    const label = side === "buy" ? "↓ BUY" : "↑ SELL";
+    return `<span class="price-pill" data-side="${side}" data-price="${price}" title="Click to copy">
+      <span class="price-side">${label}</span>
+      <span class="price-num">${fmt(price)}</span>
+    </span>`;
+  }
+
+  // ===== PERSISTENCE =====
+  const LS_KEY = "osrs-flipper-v1";
+  const PERSISTED_INPUTS = [
+    "strategy","cash","slots","minVol","maxStale","members","cut","edge","hideZero","hideSus","search",
+    "alch-search","alch-minProfit","alch-cash","alch-members",
+    "sets-minProfit",
+    "decant-search","decant-minProfit","decant-minVol",
+    "herbs-search","herbs-minProfit","herbs-minVol",
+  ];
+  function saveSettings() {
+    const data = {
+      inputs: {},
+      watch: [...state.watch],
+      alertTargets: state.alertTargets,
+      positions: state.positions,
+      activeTab: state.activeTab,
+    };
+    for (const id of PERSISTED_INPUTS) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      data.inputs[id] = el.type === "checkbox" ? el.checked : el.value;
+    }
+    try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      for (const id of PERSISTED_INPUTS) {
+        const el = document.getElementById(id);
+        if (!el || data.inputs[id] === undefined) continue;
+        if (el.type === "checkbox") el.checked = !!data.inputs[id];
+        else el.value = data.inputs[id];
+      }
+      if (Array.isArray(data.watch)) state.watch = new Set(data.watch);
+      if (data.alertTargets && typeof data.alertTargets === "object") state.alertTargets = data.alertTargets;
+      if (data.positions && typeof data.positions === "object") state.positions = data.positions;
+      if (data.activeTab) state.activeTab = data.activeTab;
+    } catch (e) {}
+  }
+
+  // ===== WATCHLIST + ALERTS =====
+  function toggleWatch(id) {
+    id = +id;
+    if (state.watch.has(id)) state.watch.delete(id);
+    else state.watch.add(id);
+    saveSettings();
+    renderWatchlist();
+    if (state.activeTab === "flipping") renderTable(computeRows());
+  }
+  function setAlertTarget(id, net) {
+    id = +id;
+    if (!net || net <= 0) delete state.alertTargets[id];
+    else state.alertTargets[id] = +net;
+    saveSettings();
+  }
+
+  // ===== POSITION TRACKING =====
+  function markBought(id) {
+    id = +id;
+    const p = state.prices[id];
+    if (!p || p.low == null || p.high == null) return;
+    const cfg = priceCfg();
+    const buyAt = p.low + buyBumpFor(p.low, p.high, cfg);
+    // Auto-watch the item if it isn't already
+    state.watch.add(id);
+    state.positions[id] = { buyPrice: buyAt, qty: 1, boughtAt: Date.now() };
+    saveSettings();
+    renderWatchlist();
+  }
+  function updatePosition(id, field, value) {
+    id = +id;
+    const pos = state.positions[id];
+    if (!pos) return;
+    if (field === "buyPrice") pos.buyPrice = Math.max(0, Math.round(+value || 0));
+    else if (field === "qty") pos.qty = Math.max(0, Math.round(+value || 0));
+    saveSettings();
+    // Don't full-rerender if user is mid-edit — but do update the advice line and pnl
+    updatePositionDisplay(id);
+  }
+  function closePosition(id) {
+    id = +id;
+    delete state.positions[id];
+    saveSettings();
+    renderWatchlist();
+  }
+  function positionAdvice(id) {
+    const pos = state.positions[id];
+    const p = state.prices[id];
+    if (!pos || !p || p.low == null || p.high == null) return null;
+    const cfg = priceCfg();
+    const sellAt = p.high - sellBumpFor(p.low, p.high, cfg);
+    const taxOnSell = geTaxFor(id, sellAt);
+    // Conversion fee is on YOUR ACTUAL buy price (what you paid), not the current Buy@
+    const convFee = conversionFee(id, pos.buyPrice);
+    const netPerItem = sellAt - taxOnSell - pos.buyPrice - convFee;
+    const totalNet = netPerItem * pos.qty;
+
+    // Break-even sell price (what you'd need to list at to come out even, after tax + conv fee)
+    const exempt = getTaxExemptIds().has(+id);
+    const breakEvenAfterFees = pos.buyPrice + convFee;
+    const breakEven = exempt ? breakEvenAfterFees : Math.ceil(breakEvenAfterFees / (1 - GE_TAX_RATE));
+
+    const d24 = state.prices24h[id];
+    const avgHigh24 = d24?.avgHighPrice || 0;
+
+    // Profit %, used for thresholds
+    const pctProfit = pos.buyPrice > 0 ? (netPerItem / pos.buyPrice) * 100 : 0;
+
+    let level, label;
+    if (netPerItem >= 0) {
+      // Already profitable at current sell price
+      if (avgHigh24 > sellAt * 1.015 && pctProfit < 4) {
+        // Could realistically wait for better
+        level = "hold-profit";
+        const targetList = avgHigh24 - sellBumpFor(p.low, p.high, cfg);
+        label = `⏳ Hold — 24h avg sell is ${fmtCompact(avgHigh24)}, ${fmtCompact(targetList - pos.buyPrice - geTaxFor(id, targetList))} more gp/ea possible if it returns`;
+      } else {
+        level = "sell-now";
+        label = `✓ Sell now — list at ${fmt(sellAt)} for ${fmtSigned(netPerItem)}/ea (${fmtSigned(totalNet)} total)`;
+      }
+    } else {
+      // Underwater
+      if (avgHigh24 >= breakEven * 1.005) {
+        level = "hold-recover";
+        label = `⏳ Hold — break-even at ${fmt(breakEven)}. 24h avg sell is ${fmtCompact(avgHigh24)} so it's been there recently.`;
+      } else if (avgHigh24 > 0) {
+        level = "cut-loss";
+        label = `⚠ Cut losses — 24h avg sell (${fmtCompact(avgHigh24)}) is below break-even (${fmt(breakEven)}). Selling now caps loss at ${fmtSigned(netPerItem)}/ea.`;
+      } else {
+        level = "hold-recover";
+        label = `⏳ Hold — break-even at ${fmt(breakEven)}. Need more history to judge recovery odds.`;
+      }
+    }
+    return { level, label, netPerItem, totalNet, breakEven, sellAt, avgHigh24 };
+  }
+  function updatePositionDisplay(id) {
+    const card = document.querySelector(`.watch-card[data-id="${id}"]`);
+    if (!card) return;
+    const advice = positionAdvice(id);
+    if (!advice) return;
+    const pnlEl = card.querySelector(".pos-pnl");
+    const adviceEl = card.querySelector(".pos-advice");
+    if (pnlEl) {
+      pnlEl.textContent = `${fmtSigned(advice.netPerItem)}/ea · ${fmtSigned(advice.totalNet)} total`;
+      pnlEl.className = "pos-pnl " + (advice.netPerItem >= 0 ? "pos" : "neg");
+    }
+    if (adviceEl) {
+      adviceEl.className = "pos-advice level-" + advice.level;
+      adviceEl.textContent = advice.label;
+    }
+  }
+
+  // Simple beep via Web Audio (no external file)
+  let audioCtx = null;
+  function beep(freq = 880, duration = 120) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine"; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration/1000);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + duration/1000 + 0.02);
+    } catch (e) {}
+  }
+
+  async function requestNotifyPermission() {
+    if (!("Notification" in window)) return false;
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") return false;
+    const p = await Notification.requestPermission();
+    return p === "granted";
+  }
+
+  function fireAlert(item, msg) {
+    const now = Date.now();
+    const last = state.lastAlertFired[item.id] || 0;
+    if (now - last < 5 * 60 * 1000) return; // throttle per item to once per 5 min
+    state.lastAlertFired[item.id] = now;
+    beep(); setTimeout(() => beep(660), 160);
+    if ("Notification" in window && Notification.permission === "granted") {
+      const n = new Notification("OSRS Flipper — " + item.name, { body: msg, icon: iconUrl(item.icon) });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => n.close(), 8000);
+    }
+    // Visual flash on watch card
+    const card = document.querySelector(`.watch-card[data-id="${item.id}"]`);
+    if (card) { card.classList.add("firing"); setTimeout(() => card.classList.remove("firing"), 3500); }
+  }
+
+  function checkAlerts() {
+    const cfg = priceCfg();
+    for (const id of state.watch) {
+      const target = state.alertTargets[id];
+      if (!target) continue;
+      const meta = state.mapping[id];
+      const p = state.prices[id];
+      if (!meta || !p || p.low == null || p.high == null) continue;
+      const buyAt = p.low + buyBumpFor(p.low, p.high, cfg);
+      const sellAt = Math.max(buyAt, p.high - sellBumpFor(p.low, p.high, cfg));
+      const net = sellAt - geTaxFor(id, sellAt) - buyAt - conversionFee(id, buyAt);
+      if (net >= target) {
+        fireAlert({ id, name: meta.name, icon: meta.icon }, `Net hit ${fmtSigned(net)} gp (target ${fmtSigned(target)})`);
+      }
+    }
+  }
+
+  function renderWatchlist() {
+    const section = $("#watchlist-section");
+    if (!state.watch.size) { section.hidden = true; return; }
+    section.hidden = false;
+    // Don't re-render while the user is mid-edit in an alert or position input — preserves focus
+    if (document.activeElement?.matches?.("[data-alert],[data-pos-price],[data-pos-qty]")) return;
+    const items = [];
+    const cfg = priceCfg();
+    for (const id of state.watch) {
+      const meta = state.mapping[id];
+      const p = state.prices[id];
+      if (!meta) continue;
+      const vol = state.volumes[id] || { buy: 0, sell: 0 };
+      const low = p?.low, high = p?.high;
+      const buyAt = (low != null && high != null) ? low + buyBumpFor(low, high, cfg) : null;
+      const sellAt = (low != null && high != null) ? Math.max(buyAt || 0, high - sellBumpFor(low, high, cfg)) : null;
+      const net = (buyAt != null && sellAt != null) ? (sellAt - geTaxFor(id, sellAt) - buyAt - conversionFee(id, buyAt)) : null;
+      const target = state.alertTargets[id] || "";
+      const pos = state.positions[id];
+
+      if (pos) {
+        // POSITION OPEN — show cost basis, live P&L, recommendation
+        const advice = positionAdvice(id);
+        items.push(`
+          <div class="watch-card has-position" data-id="${id}">
+            <div class="head">
+              <div class="icon-wrap">${iconImg(meta.icon, 26)}</div>
+              <div class="name" data-open="${id}">${escapeHtml(meta.name)}<span class="badge ${meta.members ? 'p' : 'f'}">${meta.members ? 'P' : 'F'}</span></div>
+              <button class="star-btn on" data-star="${id}" title="Unwatch">★</button>
+            </div>
+            <div class="pos-row">
+              <span>Bought</span>
+              <input type="number" class="pos-price-input" data-pos-price="${id}" value="${pos.buyPrice}" />
+              <span>×</span>
+              <input type="number" class="pos-qty-input" data-pos-qty="${id}" value="${pos.qty}" />
+              <button class="pos-close-btn" data-pos-close="${id}" title="Close position">✕</button>
+            </div>
+            <div class="pos-status">
+              <span>Now ${pricePill("sell", sellAt)}</span>
+              <span class="pos-pnl ${advice && advice.netPerItem >= 0 ? 'pos' : 'neg'}">${advice ? `${fmtSigned(advice.netPerItem)}/ea · ${fmtSigned(advice.totalNet)} total` : "—"}</span>
+            </div>
+            <div class="pos-advice level-${advice ? advice.level : 'hold-recover'}">${advice ? advice.label : "Waiting for current price…"}</div>
+          </div>`);
+      } else {
+        // NO POSITION YET — standard watch card with "Mark bought" button
+        items.push(`
+          <div class="watch-card" data-id="${id}">
+            <div class="head">
+              <div class="icon-wrap">${iconImg(meta.icon, 26)}</div>
+              <div class="name" data-open="${id}">${escapeHtml(meta.name)}<span class="badge ${meta.members ? 'p' : 'f'}">${meta.members ? 'P' : 'F'}</span></div>
+              <button class="star-btn on" data-star="${id}" title="Unwatch">★</button>
+            </div>
+            <div class="row">
+              ${pricePill("buy", buyAt)}
+              ${pricePill("sell", sellAt)}
+            </div>
+            <div class="meta">
+              <span>Net <strong style="color:${net > 0 ? 'var(--green)' : 'var(--muted)'}">${fmtSigned(net)}</strong>/ea · buy ${fmtCompact(vol.buy)}/hr · sell ${fmtCompact(vol.sell)}/hr</span>
+              <span>Alert ≥ <input type="number" class="alert-input" data-alert="${id}" value="${target}" placeholder="net gp" /></span>
+            </div>
+            <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+              ${buyAt != null ? `<button class="mark-bought-btn" data-mark-bought="${id}">📌 I bought @ ${fmt(buyAt)}</button>` : '<span class="dim">—</span>'}
+            </div>
+          </div>`);
+      }
+    }
+    $("#watchlist-grid").innerHTML = items.join("") || '<div class="watchlist-empty">No watched items yet — click ☆ on any row to add it here.</div>';
+  }
+
+  // ===== HERB FAMILIES =====
+  function buildHerbFamilies() {
+    // Match "Grimy X" → "X" or "Clean X"
+    const fam = {};
+    for (const item of Object.values(state.mapping)) {
+      const m = item.name.match(/^Grimy (.+)$/);
+      if (m) {
+        const base = m[1];
+        fam[base] = fam[base] || { name: base };
+        fam[base].grimyId = item.id;
+        fam[base].limit = item.limit;
+      }
+    }
+    // Find the clean counterpart (just the herb name, or "Clean X")
+    for (const item of Object.values(state.mapping)) {
+      for (const [base, f] of Object.entries(fam)) {
+        if (item.name === base || item.name === "Clean " + base) {
+          f.cleanId = item.id;
+          f.icon = item.icon;
+          f.members = item.members;
+        }
+      }
+    }
+    const result = {};
+    for (const [base, f] of Object.entries(fam)) {
+      if (f.grimyId && f.cleanId) result[base] = f;
+    }
+    return result;
+  }
+  function computeHerbsRows() {
+    if (!state.herbFamilies) state.herbFamilies = buildHerbFamilies();
+    const search = $("#herbs-search").value.trim().toLowerCase();
+    const minProfit = +$("#herbs-minProfit").value || 0;
+    const minVol = +$("#herbs-minVol").value || 0;
+    const cfg = priceCfg();
+    const rows = [];
+    for (const f of Object.values(state.herbFamilies)) {
+      if (search && !f.name.toLowerCase().includes(search)) continue;
+      const pG = state.prices[f.grimyId], pC = state.prices[f.cleanId];
+      if (!pG || !pC || pG.low == null || pC.high == null) continue;
+      const buyGrimy = pG.low + buyBumpFor(pG.low, pG.high ?? pG.low, cfg);
+      const sellClean = pC.high - sellBumpFor(pC.low ?? pC.high, pC.high, cfg);
+      const profitPer = sellClean - geTaxFor(f.cleanId, sellClean) - buyGrimy;
+      if (profitPer < minProfit || profitPer <= 0) continue;
+
+      const vG = state.volumes[f.grimyId] || { buy: 0, sell: 0 };
+      const vC = state.volumes[f.cleanId] || { buy: 0, sell: 0 };
+      if (Math.min(vG.buy, vC.sell) < minVol) continue;
+
+      const limit = f.limit || 0;
+      const limitPerHour = limit > 0 ? limit / 4 : Infinity;
+      // Cleaning is 1 tick per herb = up to 6000/hr. Realistic is volume-limited anyway.
+      const throughput = Math.min(vG.buy, vC.sell, limitPerHour);
+      const gpHr = throughput * profitPer;
+      const roi = buyGrimy > 0 ? (profitPer / buyGrimy) * 100 : 0;
+
+      rows.push({
+        name: f.name, icon: f.icon, members: f.members,
+        grimyId: f.grimyId, cleanId: f.cleanId,
+        buyGrimy, sellClean, profitPer, roi, limit,
+        volGrimy: vG.buy, volClean: vC.sell, gpHr,
+      });
+    }
+    const { key, dir } = state.herbsSort;
+    rows.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }
+  function renderHerbsTab() {
+    const rows = computeHerbsRows();
+    const html = rows.map(r => `
+      <tr data-id="${r.grimyId}">
+        <td class="left">
+          <div class="item-cell">
+            <div class="icon-wrap">${iconImg(r.icon, 24)}</div>
+            <div><span class="item-name">${escapeHtml(r.name)}</span><span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span></div>
+          </div>
+        </td>
+        <td>${pricePill("buy", r.buyGrimy)}</td>
+        <td>${pricePill("sell", r.sellClean)}</td>
+        <td class="pos"><strong>${fmtSigned(r.profitPer)}</strong></td>
+        <td class="${r.roi > 0 ? 'pos' : 'dim'}">${r.roi.toFixed(1)}</td>
+        <td class="dim">${r.limit ? fmt(r.limit) : '—'}</td>
+        <td>${fmt(r.volGrimy)}</td>
+        <td>${fmt(r.volClean)}</td>
+        <td class="pos"><strong>${fmtCompact(r.gpHr)}</strong></td>
+      </tr>`).join("");
+    $("#herbs-rows").innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No profitable herb cleans right now.</td></tr>';
+
+    document.querySelectorAll("#herbs-tbl thead th").forEach(th => {
+      th.classList.remove("sorted", "asc");
+      if (th.dataset.key === state.herbsSort.key) {
+        th.classList.add("sorted");
+        if (state.herbsSort.dir === "asc") th.classList.add("asc");
+      }
+    });
+  }
+
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  function fmt(n) {
+    if (n == null || Number.isNaN(n) || !isFinite(n)) return "—";
+    return Math.round(n).toLocaleString();
+  }
+  function fmtCompact(n) {
+    if (n == null || Number.isNaN(n) || !isFinite(n)) return "—";
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return (n/1e9).toFixed(2).replace(/\.?0+$/, "") + "B";
+    if (abs >= 1e6) return (n/1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
+    if (abs >= 1e3) return (n/1e3).toFixed(1).replace(/\.?0+$/, "") + "k";
+    return Math.round(n).toLocaleString();
+  }
+  function fmtSigned(n) {
+    if (n == null) return "—";
+    return (n > 0 ? "+" : "") + Math.round(n).toLocaleString();
+  }
+  function ageStr(sec) {
+    if (sec == null) return "—";
+    sec = Math.max(0, sec);
+    if (sec < 60) return sec + "s";
+    if (sec < 3600) return Math.floor(sec/60) + "m";
+    if (sec < 86400) return Math.floor(sec/3600) + "h";
+    return Math.floor(sec/86400) + "d";
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function iconUrl(iconName) {
+    if (!iconName) return "";
+    return ICON_BASE + encodeURIComponent(iconName.replace(/ /g, "_"));
+  }
+  function iconImg(iconName, size = 24) {
+    if (!iconName) return "";
+    return `<img src="${iconUrl(iconName)}" alt="" loading="lazy" onerror="this.style.display='none'" style="width:${size}px;height:${size}px">`;
+  }
+
+  // ===== FETCH =====
+  async function fetchJSON(path) {
+    const res = await fetch(API + path, { headers: { "Accept": "application/json" } });
+    if (!res.ok) throw new Error(path + " → HTTP " + res.status);
+    return res.json();
+  }
+  async function loadMapping() {
+    const arr = await fetchJSON("/mapping");
+    const m = {};
+    for (const it of arr) m[it.id] = it;
+    state.mapping = m;
+  }
+  async function loadPrices() {
+    const j = await fetchJSON("/latest");
+    state.prices = j.data || {};
+    state.lastUpdate = new Date();
+  }
+  async function load1h() {
+    try {
+      const j = await fetchJSON("/1h");
+      state.prices1h = j.data || {};
+      const v = {};
+      for (const [id, d] of Object.entries(j.data || {})) {
+        v[id] = { buy: d.lowPriceVolume || 0, sell: d.highPriceVolume || 0 };
+      }
+      state.volumes = v;
+    } catch (e) { /* non-fatal */ }
+  }
+  async function load24h() {
+    try {
+      const j = await fetchJSON("/24h");
+      state.prices24h = j.data || {};
+    } catch (e) { /* non-fatal */ }
+  }
+  async function load5m() {
+    try {
+      const j = await fetchJSON("/5m");
+      state.prices5m = j.data || {};
+    } catch (e) { /* non-fatal */ }
+  }
+
+  // Jagex's official 180-day daily history (NOT wiki — completely independent source)
+  // Used for long-term anchoring in the chart modal. Falls back to CORS proxy if direct fails.
+  async function fetchJagex180Day(itemId) {
+    const cached = state.jagexCache[itemId];
+    if (cached && Date.now() - cached.ts < 24 * 60 * 60 * 1000) return cached.data;
+    const url = JAGEX_GRAPH + itemId + ".json";
+    try {
+      let j;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        j = await res.json();
+      } catch (corsErr) {
+        // Fallback through CORS proxy
+        const res = await fetch(CORS_PROXY + encodeURIComponent(url));
+        if (!res.ok) throw new Error("Proxy HTTP " + res.status);
+        j = await res.json();
+      }
+      // Jagex returns { daily: { "timestamp_ms": price, ... }, average: {...} }
+      const series = [];
+      if (j?.daily) {
+        for (const [tsStr, price] of Object.entries(j.daily)) {
+          series.push({ ts: Math.floor(+tsStr / 1000), price: +price });
+        }
+        series.sort((a, b) => a.ts - b.ts);
+      }
+      state.jagexCache[itemId] = { data: series, ts: Date.now() };
+      return series;
+    } catch (e) {
+      state.jagexCache[itemId] = { data: [], ts: Date.now() };
+      return [];
+    }
+  }
+
+  // ===== OSRS NEWS FEED =====
+  // Fetches Jagex's official OSRS news RSS and surfaces items mentioned in posts.
+  // This is the "stuff people might miss" channel — quest hints, update notes, polls.
+  const NEWS_RSS = "https://secure.runescape.com/m=news/latest_news.rss?oldschool=true";
+  const NEWS_CACHE_MS = 60 * 60 * 1000; // 1 hour
+  state.newsCache = null;
+  state.newsCacheTs = 0;
+
+  async function fetchNews() {
+    if (state.newsCache && Date.now() - state.newsCacheTs < NEWS_CACHE_MS) return state.newsCache;
+    let xmlText;
+    try {
+      const res = await fetch(NEWS_RSS);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      xmlText = await res.text();
+    } catch (corsErr) {
+      try {
+        const res = await fetch(CORS_PROXY + encodeURIComponent(NEWS_RSS));
+        if (!res.ok) throw new Error("Proxy HTTP " + res.status);
+        xmlText = await res.text();
+      } catch (e) {
+        state.newsCache = [];
+        state.newsCacheTs = Date.now();
+        return [];
+      }
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "text/xml");
+    const items = [...doc.querySelectorAll("item")].slice(0, 8).map(node => ({
+      title: node.querySelector("title")?.textContent?.trim() || "",
+      link: node.querySelector("link")?.textContent?.trim() || "",
+      date: node.querySelector("pubDate")?.textContent?.trim() || "",
+      description: (node.querySelector("description")?.textContent || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    }));
+    state.newsCache = items;
+    state.newsCacheTs = Date.now();
+    return items;
+  }
+
+  // Find item-name mentions in a chunk of news text. Skips short/common names to avoid false matches.
+  let _newsItemIndex = null;
+  function getNewsItemIndex() {
+    if (_newsItemIndex) return _newsItemIndex;
+    _newsItemIndex = [];
+    for (const item of Object.values(state.mapping || {})) {
+      const name = item.name;
+      // Skip names that are too short or generic to match cleanly in prose
+      if (!name || name.length < 5) continue;
+      // Skip pure numerics like "10,000 coins" placeholder items
+      _newsItemIndex.push({ id: item.id, name, lower: name.toLowerCase(), members: item.members, icon: item.icon });
+    }
+    return _newsItemIndex;
+  }
+  function findItemsInText(text) {
+    if (!text) return [];
+    const lower = text.toLowerCase();
+    const idx = getNewsItemIndex();
+    const hits = [];
+    const seen = new Set();
+    for (const it of idx) {
+      if (lower.includes(it.lower)) {
+        if (!seen.has(it.id)) {
+          hits.push(it);
+          seen.add(it.id);
+        }
+        if (hits.length >= 12) break;
+      }
+    }
+    return hits;
+  }
+
+  async function renderNews() {
+    const list = $("#news-list");
+    const empty = $("#news-empty");
+    if (!list) return;
+    const items = await fetchNews();
+    if (!items.length) {
+      list.innerHTML = "";
+      empty.hidden = false;
+      $("#news-count").textContent = "—";
+      return;
+    }
+    empty.hidden = true;
+    $("#news-count").textContent = items.length + " recent posts";
+    const html = items.slice(0, 5).map(n => {
+      const corpus = n.title + " " + n.description;
+      const hits = findItemsInText(corpus);
+      const dateStr = (() => {
+        try { return new Date(n.date).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }); }
+        catch (e) { return n.date; }
+      })();
+      const chips = hits.map(h =>
+        `<span class="news-item-chip" data-news-item="${h.id}">${escapeHtml(h.name)}${h.members ? " [P]" : " [F]"}</span>`
+      ).join("");
+      return `
+        <div class="news-item">
+          <span class="news-title"><a href="${escapeHtml(n.link)}" target="_blank" rel="noopener">${escapeHtml(n.title)}</a></span>
+          <div class="news-date">${dateStr}</div>
+          <div class="news-snippet">${escapeHtml(n.description.slice(0, 220))}${n.description.length > 220 ? "…" : ""}</div>
+          ${hits.length ? `<div class="news-items">${chips}</div>` : ""}
+        </div>`;
+    }).join("");
+    list.innerHTML = html;
+  }
+
+  // Click any item chip → open the chart modal for that item
+  document.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-news-item]");
+    if (chip) {
+      openItemChart(+chip.dataset.newsItem, "5m");
+    }
+  });
+
+  // Toggle news visibility
+  document.getElementById("news-toggle")?.addEventListener("click", () => {
+    const list = $("#news-list");
+    const hidden = list.hidden;
+    list.hidden = !hidden;
+    $("#news-toggle").textContent = hidden ? "Hide" : "Show";
+  });
+
+  // ===== STATEFUL IN-MEMORY HISTORY (our edge — competitors are stateless) =====
+  function recordHistoryTick() {
+    const now = Date.now();
+    for (const [idStr, p] of Object.entries(state.prices)) {
+      if (p?.low == null && p?.high == null) continue;
+      let arr = state.history[idStr];
+      if (!arr) { arr = []; state.history[idStr] = arr; }
+      const last = arr[arr.length - 1];
+      // Skip if absolutely nothing changed (saves memory)
+      if (last && last.low === p.low && last.high === p.high) continue;
+      arr.push({ ts: now, low: p.low, high: p.high });
+      if (arr.length > HISTORY_LIMIT) arr.shift();
+    }
+  }
+
+  function computeVelocity(idStr) {
+    const arr = state.history[idStr];
+    if (!arr || arr.length < 2) return null;
+    // Use most recent points to compute slope in gp/min
+    const recent = arr.slice(-10); // up to last 10 ticks (~1 min)
+    if (recent.length < 2) return null;
+    const first = recent[0], last = recent[recent.length - 1];
+    const dtMin = (last.ts - first.ts) / 60000;
+    if (dtMin <= 0) return null;
+    const lowDelta = last.low - first.low;
+    const highDelta = last.high - first.high;
+    const lowSlope = lowDelta / dtMin;
+    const highSlope = highDelta / dtMin;
+    // Relative move % for ranking
+    const baseLow = first.low || 1;
+    const baseHigh = first.high || 1;
+    const lowPct = (lowDelta / baseLow) * 100;
+    const highPct = (highDelta / baseHigh) * 100;
+    return {
+      lowSlope, highSlope,
+      recentLowDelta: lowDelta, recentHighDelta: highDelta,
+      lowPct, highPct,
+      sampleSpanMin: dtMin,
+    };
+  }
+
+  // ===== POTION FAMILY DETECTION =====
+  function buildPotionFamilies() {
+    const fam = {};
+    for (const item of Object.values(state.mapping)) {
+      const m = item.name.match(/^(.+) \((\d)\)$/);
+      if (!m) continue;
+      const base = m[1];
+      const dose = +m[2];
+      if (dose < 1 || dose > 4) continue;
+      // Skip non-potion (1)/(2)/(3) items by checking item.name plausibility — most potions end in "potion (X)" or "(X)"
+      // The pattern works for all potions; harmless to include the very rare false positives — they'll have no price/volume.
+      if (!fam[base]) fam[base] = { name: base, doses: {} };
+      fam[base].doses[dose] = item.id;
+    }
+    const result = {};
+    for (const [base, f] of Object.entries(fam)) {
+      if (Object.keys(f.doses).length >= 2) result[base] = f;
+    }
+    return result;
+  }
+
+  // ===== STATUS =====
+  function setStatus(text, cls = "ok") {
+    $("#status-text").textContent = text;
+    const dot = $("#status .dot");
+    dot.classList.remove("warn", "err");
+    if (cls === "warn") dot.classList.add("warn");
+    else if (cls === "err") dot.classList.add("err");
+  }
+
+  // ===== FLIPPING TAB COMPUTATIONS =====
+  function computeRows() {
+    const minVol = +$("#minVol").value || 0;
+    const maxStale = (+$("#maxStale").value || 60) * 60;
+    const membersMode = $("#members").value;
+    const hideZero = $("#hideZero").checked;
+    const hideSus = $("#hideSus").checked;
+    const search = $("#search").value.trim().toLowerCase();
+    const cfg = priceCfg();
+    const strategy = $("#strategy")?.value || "reliable";
+
+    const now = Math.floor(Date.now() / 1000);
+    const rows = [];
+
+    for (const [idStr, p] of Object.entries(state.prices)) {
+      const id = +idStr;
+      const meta = state.mapping[id];
+      if (!meta) continue;
+      const high = p.high, low = p.low;
+      if (high == null || low == null) continue;
+
+      const name = meta.name;
+      if (search && !name.toLowerCase().includes(search)) continue;
+      if (membersMode === "f2p" && meta.members) continue;
+      if (membersMode === "p2p" && !meta.members) continue;
+
+      const lowAge = p.lowTime ? now - p.lowTime : null;
+      const highAge = p.highTime ? now - p.highTime : null;
+      const newest = Math.min(lowAge ?? Infinity, highAge ?? Infinity);
+      if (newest > maxStale) continue;
+
+      const vol = state.volumes[idStr] || { buy: 0, sell: 0 };
+      const buyVol = vol.buy, sellVol = vol.sell;
+      const throughput = Math.min(buyVol, sellVol);
+      if (throughput < minVol) continue;
+
+      const margin = high - low;
+      if (hideZero && margin <= 0) continue;
+
+      const buyAt = low + buyBumpFor(low, high, cfg);
+      const sellAt = Math.max(buyAt, high - sellBumpFor(low, high, cfg));
+      const tax = geTaxFor(id, sellAt);
+      const convFee = conversionFee(id, buyAt);
+      const net = sellAt - tax - buyAt - convFee;
+      const roi = buyAt > 0 ? (net / buyAt) * 100 : 0;
+      const limit = meta.limit || 0;
+
+      const limitPerHour = limit > 0 ? limit / 4 : Infinity;
+      const flipsPerHour = Math.min(throughput, limitPerHour);
+      const expectedHourlyProfit = flipsPerHour * net;
+
+      // Manipulation / staleness detection
+      const d24 = state.prices24h[idStr];
+      let suspect = false, suspectReason = "";
+      if (d24) {
+        const avgHigh = d24.avgHighPrice || 0;
+        const avgLow = d24.avgLowPrice || 0;
+        if (avgHigh > 100 && Math.abs(high - avgHigh) / avgHigh > 0.25 && throughput < 30) {
+          suspect = true;
+          suspectReason = "Spike vs 24h avg";
+        }
+        const avgSpread = avgHigh - avgLow;
+        if (!suspect && avgSpread > 0 && margin > avgSpread * 3 && throughput < 30) {
+          suspect = true;
+          suspectReason = "Spread 3× 24h avg";
+        }
+      }
+      if (!suspect && lowAge != null && highAge != null) {
+        const olderSide = Math.max(lowAge, highAge);
+        if (olderSide > 86400 && throughput < 5) {
+          suspect = true;
+          suspectReason = "One-sided market";
+        }
+      }
+      if (hideSus && suspect) continue;
+
+      // ===== DROP-RISK: are we buying near the top of the 24h range? =====
+      // Compares your Buy@ to the 24h average low. If you're paying meaningfully
+      // above that average, you're buying at the high of the cycle → drop risk.
+      let pctVsAvg = null, riskBand = null, riskLabel = "", buffer = null;
+      const avgLow24 = d24?.avgLowPrice || 0;
+      const avgHigh24 = d24?.avgHighPrice || 0;
+      if (avgLow24 > 0) {
+        pctVsAvg = (buyAt - avgLow24) / avgLow24 * 100;
+        // "Buffer" = how much room before your Buy@ would be underwater vs a return to 24h avg
+        buffer = avgHigh24 > 0 ? ((avgHigh24 - sellBumpFor(low, high, cfg) - geTaxFor(id, avgHigh24 - sellBumpFor(low, high, cfg)) - buyAt)) : null;
+        if (pctVsAvg >= 7)       { riskBand = "high";     riskLabel = `+${pctVsAvg.toFixed(1)}% vs 24h`; }
+        else if (pctVsAvg >= 3)  { riskBand = "elevated"; riskLabel = `+${pctVsAvg.toFixed(1)}% vs 24h`; }
+        else if (pctVsAvg <= -5) { riskBand = "deal";     riskLabel = `${pctVsAvg.toFixed(1)}% vs 24h`; }
+        else if (pctVsAvg <= -2) { riskBand = "discount"; riskLabel = `${pctVsAvg.toFixed(1)}% vs 24h`; }
+        else                     { riskBand = "fair";     riskLabel = `${pctVsAvg >= 0 ? "+" : ""}${pctVsAvg.toFixed(1)}% vs 24h`; }
+      }
+
+      // Tier — drop risk can downgrade an otherwise-hot flip
+      let tier = "normal", tierLabel = "";
+      const dropRisky = riskBand === "high" && net < (buyAt * 0.05); // buying >7% above 24h avg AND not enough margin to absorb a snap-back
+      if (suspect) {
+        tier = "suspect"; tierLabel = "⚠ " + suspectReason;
+      } else if (throughput < 2) {
+        tier = "dead"; tierLabel = "💀 Dead";
+      } else if (throughput < 10) {
+        tier = "risky"; tierLabel = "⚠️ Low vol";
+      } else if (dropRisky) {
+        tier = "toppy"; tierLabel = "🌊 Buying high";
+      } else if (net > 50000 && throughput < 60) {
+        tier = "whale"; tierLabel = "💎 Big & slow";
+      } else if (expectedHourlyProfit > 500000 && throughput > 200) {
+        tier = "hot"; tierLabel = "🔥 Hot flip";
+      } else if (expectedHourlyProfit > 50000 && throughput > 30) {
+        tier = "solid"; tierLabel = "👍 Solid";
+      }
+
+      // ===== STABILITY SCORE (0–100, higher = more predictable) =====
+      let stability = 100;
+      if (pctVsAvg != null) {
+        // Penalize for current price deviating from 24h avg (~6 pts per 1% off)
+        stability -= Math.min(60, Math.abs(pctVsAvg) * 6);
+      } else {
+        // No 24h data → can't really judge, dock some confidence
+        stability -= 25;
+      }
+      if (avgLow24 > 0 && avgHigh24 > 0) {
+        const sprdNow = high - low;
+        const sprdAvg = avgHigh24 - avgLow24;
+        if (sprdAvg > 0) {
+          // Penalize if today's spread differs a lot from typical (current spread suddenly 2× normal = unstable)
+          const ratio = sprdNow / sprdAvg;
+          stability -= Math.min(30, Math.abs(ratio - 1) * 25);
+        }
+      }
+      if (throughput > 200) stability += 8;
+      else if (throughput < 15) stability -= 20;
+      else if (throughput < 40) stability -= 8;
+      if (suspect) stability -= 40;
+      // Items with positive net well above zero (margin can absorb wobble) get a small boost
+      if (net > 0 && buyAt > 0 && (net / buyAt) > 0.03) stability += 5;
+      stability = Math.max(0, Math.min(100, Math.round(stability)));
+
+      // ===== MOMENTUM + BREWING SCORE (early-deal detection) =====
+      // Momentum = how 1h average price differs from 24h average. Positive = trending up.
+      const d1h = state.prices1h[idStr];
+      let momentum1h = null;
+      if (d1h?.avgHighPrice && avgHigh24 > 0) {
+        momentum1h = (d1h.avgHighPrice - avgHigh24) / avgHigh24 * 100;
+      }
+      // Volume imbalance: are buyers stepping in faster than sellers?
+      const buyPressure = (sellVol > 0 && buyVol > 0) ? (sellVol / (buyVol + sellVol)) : 0.5;
+
+      // ===== VOLUME SURGE (leading indicator: market activity heating up) =====
+      // Compare last-hour total volume to the hourly average over the last 24h.
+      // Surge >> 1 means activity is unusually elevated → often precedes a price move.
+      const total1hVol = buyVol + sellVol;
+      const total24hVol = (d24?.lowPriceVolume || 0) + (d24?.highPriceVolume || 0);
+      const expectedPerHour = total24hVol / 24;
+      const volumeSurge = expectedPerHour >= 3
+        ? (total1hVol / expectedPerHour)
+        : 1; // not enough baseline to judge
+
+      let surgeLabel = "", surgeBand = null;
+      if (volumeSurge >= 4)      { surgeBand = "mega"; surgeLabel = `🚀 ${volumeSurge.toFixed(1)}× vol`; }
+      else if (volumeSurge >= 2) { surgeBand = "high"; surgeLabel = `🔥 ${volumeSurge.toFixed(1)}× vol`; }
+      else if (volumeSurge >= 1.5){ surgeBand = "mid";  surgeLabel = `💨 ${volumeSurge.toFixed(1)}× vol`; }
+
+      // ===== VELOCITY (live in-memory tick deltas — our edge) =====
+      const vel = computeVelocity(idStr);
+      let velLabel = "", velBand = null;
+      if (vel && Math.abs(vel.sampleSpanMin) > 0.1) {
+        // Use the high-side slope (the price you'd sell at) as primary direction signal
+        const slope = vel.highSlope;
+        const slopePct = vel.highPct;
+        if (slopePct >= 0.8)      { velBand = "up-fast"; velLabel = `⚡ +${vel.highSlope.toFixed(0)}/min`; }
+        else if (slopePct >= 0.15){ velBand = "up";      velLabel = `↑ +${vel.highSlope.toFixed(0)}/min`; }
+        else if (slopePct <= -0.8){ velBand = "dn-fast"; velLabel = `⚡ ${vel.highSlope.toFixed(0)}/min`; }
+        else if (slopePct <= -0.15){velBand = "dn";      velLabel = `↓ ${vel.highSlope.toFixed(0)}/min`; }
+      }
+
+      // ===== MULTI-TIMEFRAME CONFIRMATION =====
+      // Strongest signal: 5m + 1h + 24h all agree on direction
+      const d5m = state.prices5m[idStr];
+      let trend5m = null;
+      if (d5m?.avgHighPrice && d1h?.avgHighPrice) {
+        trend5m = (d5m.avgHighPrice - d1h.avgHighPrice) / d1h.avgHighPrice * 100;
+      }
+      const liveDir = vel ? Math.sign(vel.highPct) : 0;
+      const dir5m = trend5m != null ? Math.sign(trend5m) : 0;
+      const dir1h = momentum1h != null ? Math.sign(momentum1h) : 0;
+      const dir24 = pctVsAvg != null ? Math.sign(-pctVsAvg) : 0; // below 24h avg = mean reversion upward bias
+      // Count agreeing signals
+      const dirs = [liveDir, dir5m, dir1h, dir24];
+      const upVotes = dirs.filter(d => d > 0).length;
+      const dnVotes = dirs.filter(d => d < 0).length;
+      let mtfLabel = "", mtfBoost = 0;
+      if (upVotes >= 3 && dnVotes === 0) { mtfLabel = "🔗 multi-TF up"; mtfBoost = 15; }
+      else if (dnVotes >= 3 && upVotes === 0) { mtfLabel = "🔗 multi-TF dn"; mtfBoost = -15; }
+
+      // ===== POSITION TRADE SCORE (long-hold candidates) =====
+      // The thesis: item is cheap by recent standards AND showing early signs of a turn,
+      // AND has enough margin/size to be worth holding for hours/days, not minutes.
+      // If Jagex 180-day data is cached (from a prior chart view), we boost with multi-month context.
+      let positionScore = 0;
+      // Discount component — cheaper than 24h average = setup
+      if (pctVsAvg != null) {
+        if (pctVsAvg <= -5) positionScore += 35;
+        else if (pctVsAvg <= -2) positionScore += 22;
+        else if (pctVsAvg <= 1) positionScore += 10;
+        else positionScore -= 5;
+      }
+      // Turn signal — momentum just turning up after the discount
+      if (momentum1h != null && momentum1h >= 0.3 && momentum1h <= 3) positionScore += 25;
+      else if (momentum1h != null && momentum1h > 3) positionScore += 10;
+      else if (momentum1h != null && momentum1h < -1) positionScore -= 15;
+      // Size — only worth position-trading items with real money in them
+      if (buyAt >= 1_000_000) positionScore += 15;
+      else if (buyAt >= 100_000) positionScore += 10;
+      else if (buyAt < 10_000) positionScore -= 10;
+      // Margin — meaningful per-item profit to justify the wait
+      if (net >= 100_000) positionScore += 15;
+      else if (net >= 20_000) positionScore += 10;
+      else if (net >= 5_000) positionScore += 5;
+      // Predictability bonus
+      if (stability >= 65) positionScore += 10;
+      // Some liquidity required (but lower bar than other strategies — slow OK)
+      if (throughput < 3) positionScore -= 25;
+      // 180-day Jagex context (only available if user has viewed this item's chart)
+      const jagexData = state.jagexCache[id]?.data;
+      if (jagexData && jagexData.length > 30) {
+        const cutoff90 = Math.floor(Date.now() / 1000) - 90 * 86400;
+        const last90 = jagexData.filter(d => d.ts >= cutoff90);
+        if (last90.length) {
+          const avg90 = last90.reduce((s, d) => s + d.price, 0) / last90.length;
+          const min90 = Math.min(...last90.map(d => d.price));
+          // Big boost if current is at or near 90-day low (true multi-month discount)
+          if (low <= min90 * 1.05) positionScore += 25;
+          if (low < avg90 * 0.9) positionScore += 15;
+        }
+      }
+      if (suspect) positionScore = Math.max(0, positionScore - 40);
+      positionScore = Math.max(0, Math.min(100, positionScore));
+
+      // Big Mover score: surge + early-entry position + momentum confirmation + live velocity
+      let bigMoverScore = 0;
+      if (volumeSurge >= 3) bigMoverScore += 40;
+      else if (volumeSurge >= 2) bigMoverScore += 30;
+      else if (volumeSurge >= 1.5) bigMoverScore += 18;
+      if (momentum1h != null && momentum1h >= 1) bigMoverScore += 25;
+      else if (momentum1h != null && momentum1h >= 0.3) bigMoverScore += 12;
+      else if (momentum1h != null && momentum1h <= -1.5) bigMoverScore -= 25;
+      // Entry window: price hasn't fully reacted yet
+      if (pctVsAvg != null && Math.abs(pctVsAvg) <= 3) bigMoverScore += 20;
+      else if (pctVsAvg != null && pctVsAvg > 8) bigMoverScore -= 15;
+      if (throughput > 100) bigMoverScore += 10;
+      // Live velocity adds real-time confirmation that NO competitor tool has
+      if (vel && vel.highPct >= 0.5) bigMoverScore += 15;
+      else if (vel && vel.highPct <= -0.5) bigMoverScore -= 10;
+      bigMoverScore += mtfBoost;
+      if (suspect) bigMoverScore = Math.max(0, bigMoverScore - 40);
+      bigMoverScore = Math.max(0, Math.min(100, bigMoverScore));
+
+      // Brewing score: 0–100, "this looks like it's becoming a deal"
+      let brewingScore = 0;
+      if (pctVsAvg != null && pctVsAvg <= 2) brewingScore += 30;      // not already pumped
+      if (pctVsAvg != null && pctVsAvg <= -2) brewingScore += 10;     // bonus if outright cheap
+      if (momentum1h != null && momentum1h >= 0.5) brewingScore += 30; // 1h trend up
+      if (buyPressure > 0.6) brewingScore += 20;                       // buyers pushing
+      if (throughput > 50) brewingScore += 10;                         // healthy active market
+      if (net > 0) brewingScore += 10;                                 // already profitable to flip too
+      if (suspect) brewingScore = Math.max(0, brewingScore - 40);
+
+      // Outlook chip (visible across all strategies)
+      let outlook = null, outlookLabel = "";
+      if (brewingScore >= 60 && momentum1h != null && momentum1h > 0) {
+        outlook = "brewing"; outlookLabel = `🔮 Brewing +${momentum1h.toFixed(1)}%/h`;
+      } else if (momentum1h != null) {
+        if (momentum1h >= 2)        { outlook = "rising";  outlookLabel = `📈 +${momentum1h.toFixed(1)}%/h`; }
+        else if (momentum1h >= 0.5) { outlook = "warming"; outlookLabel = `🌱 +${momentum1h.toFixed(1)}%/h`; }
+        else if (momentum1h <= -2)  { outlook = "falling"; outlookLabel = `📉 ${momentum1h.toFixed(1)}%/h`; }
+        else if (momentum1h <= -0.5){ outlook = "cooling"; outlookLabel = `❄ ${momentum1h.toFixed(1)}%/h`; }
+      }
+
+      // Strategy filter: apply per-mode hard filters
+      if (strategy === "reliable" && stability < 55) continue;
+      if (strategy === "discount" && (pctVsAvg == null || pctVsAvg > 0)) continue;
+      if (strategy === "brewing"  && brewingScore < 50) continue;
+      if (strategy === "bigmover" && bigMoverScore < 50) continue;
+      if (strategy === "position" && positionScore < 55) continue;
+
+      // Composite ranking score for "reliable" mode = stability-weighted gp/hr
+      const reliableScore = expectedHourlyProfit * (stability / 100);
+
+      rows.push({
+        id, name, members: !!meta.members, icon: meta.icon,
+        low, high, buyAt, sellAt, margin, net, roi,
+        limit, buyVol, sellVol, throughput,
+        expectedHourlyProfit, reliableScore,
+        tier, tierLabel, suspect, stability,
+        pctVsAvg, riskBand, riskLabel, buffer,
+        avgLow24, avgHigh24,
+        momentum1h, brewingScore, outlook, outlookLabel,
+        volumeSurge, surgeBand, surgeLabel, bigMoverScore,
+        velLabel, velBand, mtfLabel,
+        velHighSlope: vel?.highSlope ?? 0,
+        positionScore,
+        lowAge, highAge,
+        lowAgeSort: lowAge ?? 1e12,
+        highAgeSort: highAge ?? 1e12,
+      });
+    }
+
+    // If user hasn't manually overridden the sort, use the strategy-appropriate default
+    let effectiveKey = state.sortKey, effectiveDir = state.sortDir;
+    if (state.sortFollowsStrategy !== false) {
+      if (strategy === "reliable") { effectiveKey = "reliableScore"; effectiveDir = "desc"; }
+      else if (strategy === "discount") { effectiveKey = "pctVsAvg"; effectiveDir = "asc"; }
+      else if (strategy === "brewing")  { effectiveKey = "brewingScore"; effectiveDir = "desc"; }
+      else if (strategy === "bigmover") { effectiveKey = "bigMoverScore"; effectiveDir = "desc"; }
+      else if (strategy === "position") { effectiveKey = "positionScore"; effectiveDir = "desc"; }
+      else { effectiveKey = "expectedHourlyProfit"; effectiveDir = "desc"; }
+    }
+    rows.sort((a, b) => {
+      let av = a[effectiveKey], bv = b[effectiveKey];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av == null) av = -Infinity;
+      if (bv == null) bv = -Infinity;
+      if (av < bv) return effectiveDir === "asc" ? -1 : 1;
+      if (av > bv) return effectiveDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    state._currentSortKey = effectiveKey;
+    state._currentSortDir = effectiveDir;
+    return rows;
+  }
+
+  function renderTopCards(rows) {
+    const byHourly = [...rows].sort((a,b) => b.expectedHourlyProfit - a.expectedHourlyProfit).slice(0, 12);
+    if (!byHourly.length) {
+      $("#top-cards").innerHTML = '<div class="card empty"><div class="sub">No items match the current filters.</div></div>';
+      return;
+    }
+    const html = byHourly.map(r => `
+      <div class="card tier-${r.tier}" data-id="${r.id}">
+        <div class="row">
+          <div class="icon-wrap">${iconImg(r.icon, 32)}</div>
+          <div style="min-width:0;flex:1">
+            <div class="name">${escapeHtml(r.name)}<span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span></div>
+            <div class="sub">Net <strong style="color:var(--text)">+${fmtCompact(r.net)}</strong>/ea ${r.surgeLabel ? `<span class="surge-pill surge-${r.surgeBand}">${r.surgeLabel}</span>` : ""} ${r.outlookLabel ? `<span class="outlook-pill outlook-${r.outlook}">${r.outlookLabel}</span>` : ""} ${r.riskLabel ? `<span class="risk-pill risk-${r.riskBand}">${r.riskLabel}</span>` : ""}</div>
+          </div>
+        </div>
+        <div class="price-pair" onclick="event.stopPropagation()">
+          ${pricePill("buy", r.buyAt)}
+          ${pricePill("sell", r.sellAt)}
+        </div>
+        <div class="margin" style="margin-top:8px">~${fmtCompact(r.expectedHourlyProfit)} <span style="font-size:12px;color:var(--muted);font-weight:500">gp/hr</span></div>
+        <div class="sub">buys ${fmtCompact(r.buyVol)}/hr · sells ${fmtCompact(r.sellVol)}/hr</div>
+        ${r.tierLabel ? `<div class="tier-chip tier-${r.tier}">${r.tierLabel}</div>` : ""}
+      </div>`).join("");
+    $("#top-cards").innerHTML = html;
+  }
+
+  function renderTable(rows) {
+    const maxRows = 500;
+    const slice = rows.slice(0, maxRows);
+    const html = slice.map(r => {
+      const staleHigh = r.highAge != null && r.highAge > 600 ? "stale" : "";
+      const staleLow  = r.lowAge  != null && r.lowAge  > 600 ? "stale" : "";
+      const prev = state.prevMargins[r.id];
+      let flash = "";
+      if (prev != null) {
+        if (r.margin > prev + 1) flash = "flash-up";
+        else if (r.margin < prev - 1) flash = "flash-dn";
+      }
+      const volCls = (v) => v < 2 ? "neg" : v < 10 ? "stale" : v < 50 ? "" : "pos";
+      const isWatched = state.watch.has(r.id);
+      return `<tr class="${flash}" data-id="${r.id}">
+        <td><button class="star-btn ${isWatched ? 'on' : ''}" data-star="${r.id}" title="${isWatched ? 'Unwatch' : 'Add to watchlist'}">${isWatched ? '★' : '☆'}</button></td>
+        <td class="left">
+          <div class="item-cell">
+            <div class="icon-wrap">${iconImg(r.icon, 24)}</div>
+            <div>
+              <span class="item-name">${escapeHtml(r.name)}</span><span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span>
+              ${r.tierLabel ? `<span class="tier-pill tier-${r.tier}">${r.tierLabel}</span>` : ""}
+              ${r.velLabel ? `<span class="vel-pill vel-${r.velBand}" title="Live in-memory price velocity over the last ~1 min — measured tick-to-tick by this client, not the API">${r.velLabel}</span>` : ""}
+              ${r.mtfLabel ? `<span class="mtf-pill" title="Multi-timeframe alignment: live + 5m + 1h + 24h all agree on direction">${r.mtfLabel}</span>` : ""}
+              ${r.surgeLabel ? `<span class="surge-pill surge-${r.surgeBand}" title="Last-hour volume vs 24h average per-hour">${r.surgeLabel}</span>` : ""}
+              ${r.outlookLabel ? `<span class="outlook-pill outlook-${r.outlook}" title="Last hour avg vs last 24h avg">${r.outlookLabel}</span>` : ""}
+              ${r.riskLabel ? `<span class="risk-pill risk-${r.riskBand}" title="Buy@ is ${Math.abs(r.pctVsAvg).toFixed(1)}% ${r.pctVsAvg >= 0 ? 'above' : 'below'} the 24h average instasell">${r.riskLabel}</span>` : ""}
+              ${hasConversionFee(r.id) ? `<span class="fee-pill" title="10% conversion fee applies — already deducted from Net">⚠ 10% fee</span>` : ""}
+            </div>
+          </div>
+        </td>
+        <td class="dim">${fmt(r.low)}</td>
+        <td class="dim">${fmt(r.high)}</td>
+        <td>${pricePill("buy", r.buyAt)}</td>
+        <td>${pricePill("sell", r.sellAt)}</td>
+        <td class="${r.net > 0 ? 'pos' : r.net < 0 ? 'neg' : 'dim'}">${fmtSigned(r.net)}</td>
+        <td class="${r.roi > 0 ? 'pos' : 'dim'}">${r.roi.toFixed(2)}</td>
+        <td class="dim">${r.limit ? fmt(r.limit) : '—'}</td>
+        <td class="${volCls(r.buyVol)}">${fmt(r.buyVol)}</td>
+        <td class="${volCls(r.sellVol)}">${fmt(r.sellVol)}</td>
+        <td class="${r.expectedHourlyProfit > 0 ? 'pos' : 'dim'}"><strong>${fmtCompact(r.expectedHourlyProfit)}</strong></td>
+        <td>
+          <span class="stab-bar">
+            <span class="stab-track"><span class="stab-fill ${r.stability >= 70 ? 's-high' : r.stability >= 45 ? 's-mid' : 's-low'}" style="width:${r.stability}%"></span></span>
+            <span class="stab-num">${r.stability}</span>
+          </span>
+        </td>
+        <td class="${staleLow}">${ageStr(r.lowAge)}</td>
+        <td class="${staleHigh}">${ageStr(r.highAge)}</td>
+      </tr>`;
+    }).join("");
+    $("#rows").innerHTML = html;
+
+    const next = {};
+    for (const r of slice) next[r.id] = r.margin;
+    state.prevMargins = next;
+
+    const activeKey = state._currentSortKey || state.sortKey;
+    const activeDir = state._currentSortDir || state.sortDir;
+    $$("#tbl thead th").forEach(th => {
+      th.classList.remove("sorted", "asc");
+      if (th.dataset.key === activeKey) {
+        th.classList.add("sorted");
+        if (activeDir === "asc") th.classList.add("asc");
+      }
+    });
+
+    const total = rows.length;
+    $("#row-count").textContent = total.toLocaleString() + (total > maxRows ? ` (showing top ${maxRows})` : "") + " items";
+  }
+
+  // ===== CASH-AWARE SLOT ALLOCATOR =====
+  // GE buy limits are per 4 hours, so the slot plan reflects ONE FULL 4-HOUR CYCLE:
+  //   qty per slot = min(GE buy limit, sell volume × 4h, cash / buyAt)
+  //   cost = qty × buyAt  (capital tied up for that cycle)
+  //   profit per cycle = qty × net
+  //   profit per hour = profit per cycle / 4
+  function computeSlotPlan(allRows) {
+    const cash = parseCash($("#cash").value);
+    const slots = Math.max(1, Math.min(8, +$("#slots").value || 8));
+
+    if (cash <= 0) {
+      $("#cash-section").hidden = true;
+      return;
+    }
+    $("#cash-section").hidden = false;
+    $("#bankDisplay").textContent = fmtCompact(cash) + " gp";
+
+    // Filter to genuinely tradeable, non-suspect items with a known GE limit
+    const eligible = allRows.filter(r =>
+      !r.suspect && r.tier !== "dead" && r.tier !== "risky" &&
+      r.net > 0 && r.throughput > 5 && r.buyAt > 0 && r.limit > 0
+    );
+    // Rank by gp/hr
+    eligible.sort((a,b) => b.expectedHourlyProfit - a.expectedHourlyProfit);
+
+    const plan = [];
+    let remaining = cash;
+    const usedIds = new Set();
+    for (const r of eligible) {
+      if (plan.length >= slots) break;
+      if (usedIds.has(r.id)) continue;
+
+      // Full 4-hour cycle: bounded by GE buy limit and what the market can actually move in 4h
+      const limit4h = r.limit;
+      const throughput4h = Math.floor(r.throughput * 4);
+      const idealQty = Math.max(1, Math.min(limit4h, throughput4h));
+      const idealCost = idealQty * r.buyAt;
+
+      let qty, cost, cashBound = false;
+      if (idealCost <= remaining) {
+        qty = idealQty;
+        cost = idealCost;
+      } else {
+        qty = Math.floor(remaining / r.buyAt);
+        if (qty < 1) continue;
+        cost = qty * r.buyAt;
+        cashBound = true;
+      }
+      const profitPerCycle = qty * r.net;
+      const profitPerHour = profitPerCycle / 4;
+      plan.push({ ...r, qty, limit4h, cost, profitPerCycle, profitPerHour, cashBound });
+      remaining -= cost;
+      usedIds.add(r.id);
+      if (remaining < 1000) break;
+    }
+
+    const totalDeployed = plan.reduce((s, p) => s + p.cost, 0);
+    const totalGpHr   = plan.reduce((s, p) => s + p.profitPerHour, 0);
+    const totalGp4h   = plan.reduce((s, p) => s + p.profitPerCycle, 0);
+    $("#planDeployed").textContent = fmtCompact(totalDeployed) + " gp";
+    $("#planGpHr").textContent = "+" + fmtCompact(totalGpHr) + " gp/hr (+" + fmtCompact(totalGp4h) + "/4h)";
+    $("#planSlots").textContent = plan.length + "/" + slots;
+
+    const cards = [];
+    for (let i = 0; i < slots; i++) {
+      const p = plan[i];
+      if (p) {
+        const limitNote = p.cashBound
+          ? `<span class="sub cap">cash-bound · ${fmt(p.qty)} of ${fmt(p.limit4h)} limit</span>`
+          : `<span class="sub">${fmt(p.qty)} / ${fmt(p.limit4h)} per 4h limit</span>`;
+        cards.push(`
+          <div class="slot-card" data-id="${p.id}">
+            <div class="num">${i+1}</div>
+            <div class="icon-wrap">${iconImg(p.icon, 24)}</div>
+            <div class="info">
+              <div class="name">${escapeHtml(p.name)}</div>
+              <div class="sub">${fmt(p.qty)}× @ ${fmtCompact(p.buyAt)} = ${fmtCompact(p.cost)} cash</div>
+              <div class="sub green">+${fmtCompact(p.profitPerCycle)}/cycle · +${fmtCompact(p.profitPerHour)}/hr</div>
+              <div>${limitNote}</div>
+            </div>
+          </div>`);
+      } else {
+        cards.push(`<div class="slot-card empty"><div class="num">${i+1}</div><div class="info"><div class="sub">Empty slot</div></div></div>`);
+      }
+    }
+    $("#slot-grid").innerHTML = cards.join("");
+  }
+
+  // ===== RERENDER =====
+  function rerender() {
+    const rows = computeRows();
+    renderTopCards(rows);
+    renderTable(rows);
+    computeSlotPlan(rows);
+    renderWatchlist();
+    checkAlerts();
+    const t = state.lastUpdate ? state.lastUpdate.toLocaleTimeString() : "—";
+    setStatus(`Live · ${rows.length.toLocaleString()} items · updated ${t}`, "ok");
+  }
+
+  // ===== ALCHING TAB =====
+  function computeAlchRows() {
+    const natP = state.prices[NATURE_RUNE_ID];
+    const natRunePrice = natP ? (natP.high || natP.low || 100) : 100;
+    const search = $("#alch-search").value.trim().toLowerCase();
+    const minProfit = +$("#alch-minProfit").value || 0;
+    const membersMode = $("#alch-members").value;
+    const cash = parseCash($("#alch-cash").value);
+    const cfg = priceCfg();
+
+    const rows = [];
+    for (const item of Object.values(state.mapping)) {
+      if (!item.highalch || item.highalch <= 0) continue;
+      const p = state.prices[item.id];
+      if (!p || p.low == null) continue;
+      if (membersMode === "f2p" && item.members) continue;
+      if (membersMode === "p2p" && !item.members) continue;
+      if (search && !item.name.toLowerCase().includes(search)) continue;
+
+      const buyAt = p.low + buyBumpFor(p.low, p.high ?? p.low, cfg);
+      const profit = item.highalch - buyAt - natRunePrice;
+      if (profit < minProfit) continue;
+      if (profit <= 0) continue;
+
+      const vol = state.volumes[item.id] || { buy: 0, sell: 0 };
+      const limit = item.limit || 0;
+      // Casts/hr realistic: capped by ALCH_CASTS_PER_HR, buy volume, and limit/4
+      const buyCap = vol.buy || Infinity;
+      const limitCap = limit > 0 ? limit / 4 : Infinity;
+      const castsPerHour = Math.min(ALCH_CASTS_PER_HR, buyCap, limitCap);
+      const gpHr = castsPerHour * profit;
+      const affordable = cash <= 0 || (buyAt * Math.min(castsPerHour, limit || Infinity)) <= cash;
+      if (!affordable) continue;
+
+      rows.push({
+        id: item.id, name: item.name, icon: item.icon, members: item.members,
+        buyAt, highalch: item.highalch, natRunePrice, profit,
+        buyVol: vol.buy, limit, gpHr,
+      });
+    }
+    const { key, dir } = state.alchSort;
+    rows.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av == null) av = -Infinity; if (bv == null) bv = -Infinity;
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }
+  function renderAlchTab() {
+    const rows = computeAlchRows().slice(0, 300);
+    const html = rows.map(r => `
+      <tr data-id="${r.id}">
+        <td class="left">
+          <div class="item-cell">
+            <div class="icon-wrap">${iconImg(r.icon, 24)}</div>
+            <div><span class="item-name">${escapeHtml(r.name)}</span><span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span></div>
+          </div>
+        </td>
+        <td>${fmt(r.buyAt)}</td>
+        <td class="dim">${fmt(r.highalch)}</td>
+        <td class="dim">${fmt(r.natRunePrice)}</td>
+        <td class="pos"><strong>${fmtSigned(r.profit)}</strong></td>
+        <td>${fmt(r.buyVol)}</td>
+        <td class="dim">${r.limit ? fmt(r.limit) : '—'}</td>
+        <td class="pos"><strong>${fmtCompact(r.gpHr)}</strong></td>
+      </tr>`).join("");
+    $("#alch-rows").innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No profitable alch targets.</td></tr>';
+
+    document.querySelectorAll("#alch-tbl thead th").forEach(th => {
+      th.classList.remove("sorted", "asc");
+      if (th.dataset.key === state.alchSort.key) {
+        th.classList.add("sorted");
+        if (state.alchSort.dir === "asc") th.classList.add("asc");
+      }
+    });
+  }
+
+  // ===== SETS TAB =====
+  function computeSetsRows() {
+    const minProfit = +$("#sets-minProfit").value || 0;
+    const rows = [];
+    for (const [setIdStr, setData] of Object.entries(ARMOR_SETS)) {
+      const setId = +setIdStr;
+      const setItem = state.mapping[setId];
+      const setPrice = state.prices[setId];
+      if (!setItem || !setPrice || setPrice.low == null || setPrice.high == null) continue;
+
+      const cfg = priceCfg();
+      let combineCost = 0, decombineSellGross = 0, decombineSellTax = 0, available = true;
+      for (const partId of setData.parts) {
+        const pp = state.prices[partId];
+        if (!pp || pp.low == null || pp.high == null) { available = false; break; }
+        combineCost += pp.low + buyBumpFor(pp.low, pp.high, cfg);
+        const partSellAt = pp.high - sellBumpFor(pp.low, pp.high, cfg);
+        decombineSellGross += partSellAt;
+        decombineSellTax += geTaxFor(partId, partSellAt);
+      }
+      if (!available) continue;
+
+      const setSellAt = setPrice.high - sellBumpFor(setPrice.low, setPrice.high, cfg);
+      const setBuyAt = setPrice.low + buyBumpFor(setPrice.low, setPrice.high, cfg);
+
+      const combineProfit = setSellAt - geTaxFor(setId, setSellAt) - combineCost;
+      const decombineProfit = decombineSellGross - decombineSellTax - setBuyAt;
+      const bestProfit = Math.max(combineProfit, decombineProfit);
+      if (bestProfit < minProfit) continue;
+      const bestAction = combineProfit >= decombineProfit ? "Combine parts → sell set" : "Buy set → sell parts";
+
+      rows.push({
+        setId, name: setData.name, icon: setItem.icon, members: setItem.members,
+        combineCost, combineSell: setSellAt, combineProfit,
+        decombineCost: setBuyAt, decombineSell: decombineSellGross, decombineProfit,
+        bestProfit, bestAction,
+      });
+    }
+    const { key, dir } = state.setsSort;
+    rows.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }
+  function renderSetsTab() {
+    const rows = computeSetsRows();
+    const html = rows.map(r => `
+      <tr data-id="${r.setId}">
+        <td class="left">
+          <div class="item-cell">
+            <div class="icon-wrap">${iconImg(r.icon, 24)}</div>
+            <div><span class="item-name">${escapeHtml(r.name)}</span><span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span></div>
+          </div>
+        </td>
+        <td class="dim">${fmt(r.combineCost)}</td>
+        <td class="dim">${fmt(r.combineSell)}</td>
+        <td class="${r.combineProfit > 0 ? 'pos' : 'neg'}">${fmtSigned(r.combineProfit)}</td>
+        <td class="dim">${fmt(r.decombineCost)}</td>
+        <td class="dim">${fmt(r.decombineSell)}</td>
+        <td class="${r.decombineProfit > 0 ? 'pos' : 'neg'}">${fmtSigned(r.decombineProfit)}</td>
+        <td class="${r.bestProfit > 0 ? 'pos' : 'neg'}"><strong>${fmtSigned(r.bestProfit)}</strong></td>
+        <td class="left">${r.bestProfit > 0 ? escapeHtml(r.bestAction) : '<span class="dim">No edge</span>'}</td>
+      </tr>`).join("");
+    $("#sets-rows").innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No set arbitrage right now.</td></tr>';
+
+    document.querySelectorAll("#sets-tbl thead th").forEach(th => {
+      th.classList.remove("sorted", "asc");
+      if (th.dataset.key === state.setsSort.key) {
+        th.classList.add("sorted");
+        if (state.setsSort.dir === "asc") th.classList.add("asc");
+      }
+    });
+  }
+
+  // ===== DECANTING TAB =====
+  function computeDecantRows() {
+    if (!state.potionFamilies) state.potionFamilies = buildPotionFamilies();
+    const search = $("#decant-search").value.trim().toLowerCase();
+    const minProfit = +$("#decant-minProfit").value || 0;
+    const minVol = +$("#decant-minVol").value || 0;
+
+    // All decant pairs: from-dose → to-dose, find LCM combo that uses whole units.
+    // Buy qIn × fromDose-pot, convert to qOut × toDose-pot. qIn × fromDose == qOut × toDose.
+    const pairs = [
+      { from: 4, to: 3, qIn: 3, qOut: 4 },
+      { from: 4, to: 2, qIn: 1, qOut: 2 },
+      { from: 4, to: 1, qIn: 1, qOut: 4 },
+      { from: 3, to: 2, qIn: 2, qOut: 3 },
+      { from: 3, to: 1, qIn: 1, qOut: 3 },
+      { from: 2, to: 1, qIn: 1, qOut: 2 },
+    ];
+
+    const cfg = priceCfg();
+    const rows = [];
+    for (const family of Object.values(state.potionFamilies)) {
+      if (search && !family.name.toLowerCase().includes(search)) continue;
+
+      // Find the best decant variant for this family
+      let best = null;
+      for (const pair of pairs) {
+        const fromId = family.doses[pair.from], toId = family.doses[pair.to];
+        if (!fromId || !toId) continue;
+        const pFrom = state.prices[fromId], pTo = state.prices[toId];
+        if (!pFrom || !pTo || pFrom.low == null || pTo.high == null) continue;
+
+        const buyFrom = pFrom.low + buyBumpFor(pFrom.low, pFrom.high ?? pFrom.low, cfg);
+        const sellTo = pTo.high - sellBumpFor(pTo.low ?? pTo.high, pTo.high, cfg);
+        const cost = pair.qIn * buyFrom;
+        const proceedsNet = pair.qOut * (sellTo - geTaxFor(toId, sellTo));
+        const profit = proceedsNet - cost;
+        const profitPerFromUnit = profit / pair.qIn;
+
+        const vTo = state.volumes[toId] || { buy: 0, sell: 0 };
+        const vFrom = state.volumes[fromId] || { buy: 0, sell: 0 };
+
+        const candidate = {
+          fromDose: pair.from, toDose: pair.to,
+          fromId, toId,
+          buyFrom, sellTo,
+          qIn: pair.qIn, qOut: pair.qOut,
+          costPer: cost, proceedsPer: proceedsNet,
+          profitPerCycle: profit,
+          profitPerFromUnit,
+          volBuy: vFrom.buy, volSell: vTo.sell,
+        };
+        if (!best || candidate.profitPerCycle > best.profitPerCycle) {
+          best = candidate;
+        }
+      }
+      if (!best) continue;
+      if (best.profitPerCycle < minProfit) continue;
+      if (best.volSell < minVol) continue;
+
+      rows.push({
+        d4Id: best.fromId, d3Id: best.toId,
+        name: family.name,
+        icon: state.mapping[best.fromId]?.icon,
+        members: state.mapping[best.fromId]?.members,
+        buy4: best.buyFrom, sell3: best.sellTo,
+        costPer: best.costPer, proceedsPer: best.proceedsPer,
+        profitPerCycle: best.profitPerCycle,
+        profitPer4: best.profitPerFromUnit,
+        volBuy: best.volBuy, volSell: best.volSell,
+        fromDose: best.fromDose, toDose: best.toDose,
+        qIn: best.qIn, qOut: best.qOut,
+      });
+    }
+    const { key, dir } = state.decantSort;
+    rows.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }
+  function renderDecantTab() {
+    const rows = computeDecantRows();
+    const html = rows.map(r => `
+      <tr data-id="${r.d4Id}">
+        <td class="left">
+          <div class="item-cell">
+            <div class="icon-wrap">${iconImg(r.icon, 24)}</div>
+            <div>
+              <span class="item-name">${escapeHtml(r.name)}</span><span class="badge ${r.members ? 'p' : 'f'}">${r.members ? 'P' : 'F'}</span>
+              <span class="decant-arrow">${r.fromDose}→${r.toDose}</span>
+            </div>
+          </div>
+        </td>
+        <td>${pricePill("buy", r.buy4)}</td>
+        <td>${pricePill("sell", r.sell3)}</td>
+        <td class="dim">${fmt(r.costPer)} <span style="color:var(--dim)">(${r.qIn}×)</span></td>
+        <td class="dim">${fmt(r.proceedsPer)} <span style="color:var(--dim)">(${r.qOut}×)</span></td>
+        <td class="${r.profitPerCycle > 0 ? 'pos' : 'neg'}"><strong>${fmtSigned(r.profitPerCycle)}</strong></td>
+        <td class="${r.profitPer4 > 0 ? 'pos' : 'neg'}">${fmtSigned(r.profitPer4)}</td>
+        <td>${fmt(r.volBuy)}</td>
+        <td>${fmt(r.volSell)}</td>
+      </tr>`).join("");
+    $("#decant-rows").innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No profitable decants right now.</td></tr>';
+
+    document.querySelectorAll("#decant-tbl thead th").forEach(th => {
+      th.classList.remove("sorted", "asc");
+      if (th.dataset.key === state.decantSort.key) {
+        th.classList.add("sorted");
+        if (state.decantSort.dir === "asc") th.classList.add("asc");
+      }
+    });
+  }
+
+  // ===== LIVE GE WATCHER =====
+  const watcher = {
+    stream: null,
+    video: null,
+    region: null,           // {x, y, w, h} normalized to video dimensions (0..1)
+    slotCount: 8,
+    slots: [],              // [{ region:{x,y,w,h}, itemName:str, prev:ImageData, lastChange:ts, canvas, ctx }]
+    captureCanvas: null,
+    captureCtx: null,
+    thumbCanvas: null,
+    thumbCtx: null,
+    prevFrameData: null,    // full-region diff (kept for the "any change" ping)
+    intervalId: null,
+    lastChangeTs: null,
+    captureMs: 2000,
+  };
+  const LS_REGION = "osrs-flipper-watcher-region-v1";
+  const LS_SLOTS = "osrs-flipper-watcher-slots-v1";
+  const LS_SLOT_COUNT = "osrs-flipper-watcher-slot-count-v1";
+
+  function loadWatcherRegion() {
+    try { watcher.region = JSON.parse(localStorage.getItem(LS_REGION)) || null; } catch (e) { watcher.region = null; }
+    try {
+      const sc = +localStorage.getItem(LS_SLOT_COUNT);
+      if (sc === 3 || sc === 8) watcher.slotCount = sc;
+    } catch (e) {}
+    try {
+      const labels = JSON.parse(localStorage.getItem(LS_SLOTS)) || [];
+      watcher.slotLabels = Array.isArray(labels) ? labels : [];
+    } catch (e) { watcher.slotLabels = []; }
+  }
+  function saveWatcherRegion() {
+    try { localStorage.setItem(LS_REGION, JSON.stringify(watcher.region)); } catch (e) {}
+  }
+  function saveSlotLabels() {
+    const labels = watcher.slots.map(s => s.itemName || "");
+    try { localStorage.setItem(LS_SLOTS, JSON.stringify(labels)); } catch (e) {}
+  }
+  function saveSlotCount() {
+    try { localStorage.setItem(LS_SLOT_COUNT, String(watcher.slotCount)); } catch (e) {}
+  }
+
+  function subdivideRegion(count) {
+    // Splits the main crop region into N sub-regions (normalized 0..1, relative to the main region).
+    // 8 slots → 4 rows × 2 cols. 3 slots → 3 rows × 1 col (matches F2P layout).
+    const subs = [];
+    if (count === 3) {
+      for (let i = 0; i < 3; i++) subs.push({ x: 0, y: i / 3, w: 1, h: 1 / 3 });
+    } else {
+      for (let i = 0; i < 8; i++) subs.push({ x: (i % 2) / 2, y: Math.floor(i / 2) / 4, w: 0.5, h: 0.25 });
+    }
+    return subs;
+  }
+
+  function buildSlots() {
+    const subs = subdivideRegion(watcher.slotCount);
+    const oldLabels = watcher.slotLabels || [];
+    watcher.slots = subs.map((sub, i) => ({
+      region: sub,
+      itemName: oldLabels[i] || "",
+      prev: null,
+      lastChange: null,
+      canvas: null,
+      ctx: null,
+    }));
+  }
+
+  function renderSlotGrid() {
+    const grid = $("#slot-watch-grid");
+    if (!grid) return;
+    grid.innerHTML = watcher.slots.map((s, i) => `
+      <div class="slot-watch-card" data-slot="${i}">
+        <div class="slot-head"><span class="slot-num">Slot ${i + 1}</span><span id="slot-time-${i}">—</span></div>
+        <canvas id="slot-canvas-${i}" width="160" height="60"></canvas>
+        <input type="text" class="slot-label" data-slot-label="${i}" placeholder="Item in this slot…" value="${escapeHtml(s.itemName || "")}" list="slot-items-list" />
+        <div class="slot-actions">
+          <button class="btn-buy" data-slot-buy="${i}" title="Log a buy that just filled in this slot">📥 Buy</button>
+          <button class="btn-sell" data-slot-sell="${i}" title="Log a sell that just filled in this slot">💰 Sell</button>
+        </div>
+      </div>`).join("");
+
+    // Cache canvas references
+    for (let i = 0; i < watcher.slots.length; i++) {
+      const c = document.getElementById(`slot-canvas-${i}`);
+      watcher.slots[i].canvas = c;
+      watcher.slots[i].ctx = c.getContext("2d");
+    }
+
+    // Ensure datalist of items exists for slot label autocomplete
+    if (!document.getElementById("slot-items-list")) {
+      const dl = document.createElement("datalist");
+      dl.id = "slot-items-list";
+      const names = Object.values(state.mapping).slice(0, 4000).map(it => `<option value="${escapeHtml(it.name)}">`).join("");
+      dl.innerHTML = names;
+      document.body.appendChild(dl);
+    }
+  }
+
+  function findItemIdByName(name) {
+    if (!name) return null;
+    const lower = name.trim().toLowerCase();
+    for (const item of Object.values(state.mapping)) {
+      if (item.name.toLowerCase() === lower) return item.id;
+    }
+    return null;
+  }
+
+  function slotAction(slotIdx, side) {
+    // side = "buy" or "sell"
+    const slot = watcher.slots[slotIdx];
+    if (!slot) return;
+    const name = slot.itemName?.trim();
+    if (!name) {
+      alert(`Slot ${slotIdx + 1}: enter an item name in this slot's label first.`);
+      return;
+    }
+    const id = findItemIdByName(name);
+    if (!id) {
+      alert(`Couldn't find an item called "${name}" in the live catalog. Check the spelling — typing the first few letters usually shows suggestions.`);
+      return;
+    }
+    const p = state.prices[id];
+    const meta = state.mapping[id];
+    if (!p || !meta) {
+      alert(`No live price data for ${name} yet.`);
+      return;
+    }
+    const cfg = priceCfg();
+    const buyAt = p.low + buyBumpFor(p.low, p.high, cfg);
+    const sellAt = Math.max(buyAt, p.high - sellBumpFor(p.low, p.high, cfg));
+    const limitPerHour = meta.limit > 0 ? meta.limit : 1;
+
+    if (side === "buy") {
+      // Create or update a position based on the slot
+      const existing = state.positions[id];
+      const defaultQty = existing?.qty || Math.min(meta.limit || 100, 100);
+      const qtyStr = prompt(`Slot ${slotIdx + 1}: Bought ${name} — qty?`, String(defaultQty));
+      if (qtyStr == null) return;
+      const qty = Math.max(1, Math.round(+qtyStr || 0));
+      const priceStr = prompt(`Slot ${slotIdx + 1}: At what price per item?`, String(buyAt));
+      if (priceStr == null) return;
+      const price = Math.max(1, Math.round(+priceStr || 0));
+      state.watch.add(id);
+      state.positions[id] = { buyPrice: price, qty, boughtAt: Date.now() };
+      saveSettings();
+      renderWatchlist();
+      $("#watcher-meta-last").textContent = new Date().toLocaleTimeString();
+    } else if (side === "sell") {
+      // If there's an existing position for this item, this sell closes/reduces it.
+      const existing = state.positions[id];
+      if (existing) {
+        const defaultQty = existing.qty;
+        const qtyStr = prompt(`Slot ${slotIdx + 1}: Sold ${name} — qty? (you held ${defaultQty})`, String(defaultQty));
+        if (qtyStr == null) return;
+        const qty = Math.max(1, Math.min(existing.qty, Math.round(+qtyStr || 0)));
+        const priceStr = prompt(`Slot ${slotIdx + 1}: At what sell price per item?`, String(sellAt));
+        if (priceStr == null) return;
+        const price = Math.max(1, Math.round(+priceStr || 0));
+        // Compute P&L for the closed portion
+        const tax = geTaxFor(id, price);
+        const convFee = conversionFee(id, existing.buyPrice);
+        const realizedPerItem = price - tax - existing.buyPrice - convFee;
+        const realizedTotal = realizedPerItem * qty;
+        // Reduce position
+        if (qty >= existing.qty) {
+          delete state.positions[id];
+        } else {
+          existing.qty -= qty;
+        }
+        saveSettings();
+        renderWatchlist();
+        alert(`Sold ${qty}× ${name} @ ${fmt(price)} → realized ${fmtSigned(realizedTotal)} gp (${fmtSigned(realizedPerItem)}/ea).`);
+        $("#watcher-meta-last").textContent = new Date().toLocaleTimeString();
+      } else {
+        alert(`No open position for ${name}. Log the buy first (or use 📥 Buy if this was a buy that filled).`);
+      }
+    }
+  }
+
+  // Slot grid event delegation
+  document.addEventListener("input", (e) => {
+    const idx = e.target?.dataset?.slotLabel;
+    if (idx == null) return;
+    const i = +idx;
+    if (!watcher.slots[i]) return;
+    watcher.slots[i].itemName = e.target.value;
+    saveSlotLabels();
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-slot-buy]");
+    if (b) { slotAction(+b.dataset.slotBuy, "buy"); return; }
+    const s = e.target.closest("[data-slot-sell]");
+    if (s) { slotAction(+s.dataset.slotSell, "sell"); return; }
+  });
+  $("#watcher-slot-count")?.addEventListener("change", (e) => {
+    watcher.slotCount = +e.target.value || 8;
+    saveSlotCount();
+    if (watcher.region && watcher.stream) {
+      buildSlots();
+      renderSlotGrid();
+      watcher.prevFrameData = null; // reset diff
+    }
+  });
+
+  async function startWatcher() {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      alert("Your browser doesn't support screen capture.");
+      return;
+    }
+    try {
+      watcher.stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 5, max: 10 } },
+        audio: false,
+      });
+    } catch (e) {
+      // User cancelled
+      return;
+    }
+    watcher.video = $("#watcher-video");
+    watcher.video.srcObject = watcher.stream;
+    await new Promise(res => watcher.video.onloadedmetadata = res);
+    await watcher.video.play().catch(() => {});
+
+    // If stream ends (user clicks browser's "Stop sharing"), reset UI
+    watcher.stream.getVideoTracks()[0].addEventListener("ended", () => stopWatcher());
+
+    // Show crop UI to pick the GE region
+    showCropModal();
+  }
+
+  function stopWatcher() {
+    if (watcher.intervalId) { clearInterval(watcher.intervalId); watcher.intervalId = null; }
+    if (watcher.stream) {
+      watcher.stream.getTracks().forEach(t => t.stop());
+      watcher.stream = null;
+    }
+    if (watcher.video) watcher.video.srcObject = null;
+    watcher.prevFrameData = null;
+    $("#watcher-toggle").hidden = false;
+    $("#watcher-recrop").hidden = true;
+    $("#watcher-stop").hidden = true;
+    $("#watcher-body").hidden = true;
+    $("#watcher-status").className = "watcher-status";
+    $("#watcher-status").textContent = "Off — share your OSRS window to watch trades in-place";
+  }
+
+  function showCropModal() {
+    const vw = watcher.video.videoWidth, vh = watcher.video.videoHeight;
+    if (!vw || !vh) return;
+
+    const root = $("#crop-root");
+    root.innerHTML = `
+      <div class="crop-backdrop" id="crop-backdrop">
+        <div class="crop-container" onclick="event.stopPropagation()">
+          <h3>Drag a box around your GE area</h3>
+          <div class="hint">Include all your GE slots. Smaller box = faster capture and more sensitive change detection.</div>
+          <div class="crop-area" id="crop-area">
+            <video id="crop-preview" autoplay muted playsinline></video>
+            <div class="crop-rect" id="crop-rect" hidden></div>
+          </div>
+          <div class="crop-actions">
+            <button id="crop-cancel">Cancel</button>
+            <button id="crop-save" class="primary" disabled>Use this region</button>
+          </div>
+        </div>
+      </div>`;
+
+    const preview = $("#crop-preview");
+    preview.srcObject = watcher.stream;
+    preview.play().catch(() => {});
+
+    const area = $("#crop-area"), rectEl = $("#crop-rect");
+    let dragStart = null, dragRect = null;
+
+    area.addEventListener("mousedown", (e) => {
+      const r = area.getBoundingClientRect();
+      dragStart = { x: e.clientX - r.left, y: e.clientY - r.top };
+      dragRect = { x: dragStart.x, y: dragStart.y, w: 0, h: 0 };
+      rectEl.hidden = false;
+      rectEl.style.left = dragStart.x + "px";
+      rectEl.style.top = dragStart.y + "px";
+      rectEl.style.width = "0px";
+      rectEl.style.height = "0px";
+    });
+    area.addEventListener("mousemove", (e) => {
+      if (!dragStart) return;
+      const r = area.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      const left = Math.min(dragStart.x, x), top = Math.min(dragStart.y, y);
+      const w = Math.abs(x - dragStart.x), h = Math.abs(y - dragStart.y);
+      rectEl.style.left = left + "px";
+      rectEl.style.top = top + "px";
+      rectEl.style.width = w + "px";
+      rectEl.style.height = h + "px";
+      dragRect = { x: left, y: top, w, h };
+    });
+    const finishDrag = () => {
+      if (dragRect && dragRect.w > 10 && dragRect.h > 10) $("#crop-save").disabled = false;
+      dragStart = null;
+    };
+    area.addEventListener("mouseup", finishDrag);
+    area.addEventListener("mouseleave", finishDrag);
+
+    $("#crop-cancel").addEventListener("click", () => {
+      root.innerHTML = "";
+      stopWatcher();
+    });
+    $("#crop-save").addEventListener("click", () => {
+      if (!dragRect) return;
+      const previewRect = preview.getBoundingClientRect();
+      watcher.region = {
+        x: dragRect.x / previewRect.width,
+        y: dragRect.y / previewRect.height,
+        w: dragRect.w / previewRect.width,
+        h: dragRect.h / previewRect.height,
+      };
+      saveWatcherRegion();
+      root.innerHTML = "";
+      beginCaptureLoop();
+    });
+  }
+
+  function beginCaptureLoop() {
+    if (!watcher.region) return;
+    watcher.captureCanvas = document.createElement("canvas");
+    watcher.captureCtx = watcher.captureCanvas.getContext("2d", { willReadFrequently: true });
+    watcher.thumbCanvas = $("#watcher-thumb");
+    watcher.thumbCtx = watcher.thumbCanvas.getContext("2d");
+
+    // Sync slot-count selector + build slot grid
+    const sel = $("#watcher-slot-count");
+    if (sel) sel.value = String(watcher.slotCount);
+    buildSlots();
+    renderSlotGrid();
+
+    $("#watcher-toggle").hidden = true;
+    $("#watcher-recrop").hidden = false;
+    $("#watcher-stop").hidden = false;
+    $("#watcher-body").hidden = false;
+    $("#watcher-status").className = "watcher-status live";
+    $("#watcher-status").textContent = "Live · watching " + watcher.slotCount + " slots";
+
+    captureOnce();
+    watcher.intervalId = setInterval(captureOnce, watcher.captureMs);
+  }
+
+  function captureOnce() {
+    if (!watcher.video || !watcher.region) return;
+    const v = watcher.video;
+    const vw = v.videoWidth, vh = v.videoHeight;
+    if (!vw || !vh) return;
+
+    const sx = Math.floor(watcher.region.x * vw);
+    const sy = Math.floor(watcher.region.y * vh);
+    const sw = Math.max(1, Math.floor(watcher.region.w * vw));
+    const sh = Math.max(1, Math.floor(watcher.region.h * vh));
+
+    // Capture the full GE area
+    watcher.captureCanvas.width = sw;
+    watcher.captureCanvas.height = sh;
+    watcher.captureCtx.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    // Big thumbnail
+    const tw = 320, th = Math.round(tw * sh / sw);
+    watcher.thumbCanvas.width = tw;
+    watcher.thumbCanvas.height = th;
+    watcher.thumbCtx.drawImage(watcher.captureCanvas, 0, 0, tw, th);
+
+    // Per-slot capture + diff
+    for (let i = 0; i < watcher.slots.length; i++) {
+      const slot = watcher.slots[i];
+      const sub = slot.region;
+      const ssx = Math.floor(sub.x * sw);
+      const ssy = Math.floor(sub.y * sh);
+      const ssw = Math.max(1, Math.floor(sub.w * sw));
+      const ssh = Math.max(1, Math.floor(sub.h * sh));
+
+      // Per-slot thumbnail
+      const slotTw = 160;
+      const slotTh = Math.max(20, Math.round(slotTw * ssh / ssw));
+      slot.canvas.width = slotTw;
+      slot.canvas.height = slotTh;
+      slot.ctx.drawImage(watcher.captureCanvas, ssx, ssy, ssw, ssh, 0, 0, slotTw, slotTh);
+
+      // Downsampled diff frame
+      const dw = Math.min(40, ssw), dh = Math.min(40, ssh);
+      const diffCanvas = document.createElement("canvas");
+      diffCanvas.width = dw; diffCanvas.height = dh;
+      const diffCtx = diffCanvas.getContext("2d", { willReadFrequently: true });
+      diffCtx.drawImage(watcher.captureCanvas, ssx, ssy, ssw, ssh, 0, 0, dw, dh);
+      const currentData = diffCtx.getImageData(0, 0, dw, dh);
+
+      if (slot.prev) {
+        const ratio = pixelDiff(slot.prev, currentData);
+        if (ratio > 0.04) onSlotChanged(i, ratio);
+      }
+      slot.prev = currentData;
+    }
+  }
+
+  function onSlotChanged(slotIdx, ratio) {
+    const slot = watcher.slots[slotIdx];
+    if (!slot) return;
+    const now = Date.now();
+    // Debounce per slot
+    if (slot.lastChange && now - slot.lastChange < 3500) return;
+    slot.lastChange = now;
+    watcher.lastChangeTs = now;
+
+    beep(660); setTimeout(() => beep(880), 120);
+
+    const card = document.querySelector(`.slot-watch-card[data-slot="${slotIdx}"]`);
+    if (card) {
+      card.classList.remove("changed"); void card.offsetWidth; card.classList.add("changed");
+      setTimeout(() => card.classList.remove("changed"), 3500);
+    }
+    const t = document.getElementById(`slot-time-${slotIdx}`);
+    if (t) t.textContent = new Date(now).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+
+    $("#watcher-meta-last").textContent = `Slot ${slotIdx + 1} @ ${new Date(now).toLocaleTimeString()}`;
+    $("#watcher-status").className = "watcher-status changed";
+    const label = slot.itemName?.trim() || "(unlabeled)";
+    $("#watcher-status").textContent = `Slot ${slotIdx + 1} (${label}) changed — click 📥 Buy or 💰 Sell on that slot's card to log it`;
+    setTimeout(() => {
+      if (watcher.stream) {
+        $("#watcher-status").className = "watcher-status live";
+        $("#watcher-status").textContent = "Live · watching " + watcher.slotCount + " slots";
+      }
+    }, 8000);
+
+    if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+      const n = new Notification("OSRS Flipper — Slot " + (slotIdx + 1) + " changed", { body: label });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => n.close(), 8000);
+    }
+  }
+
+  function pixelDiff(prev, curr) {
+    if (!prev || !curr || prev.data.length !== curr.data.length) return 1.0;
+    let changed = 0;
+    const data1 = prev.data, data2 = curr.data;
+    const total = data1.length / 4;
+    for (let i = 0; i < data1.length; i += 4) {
+      const dr = Math.abs(data1[i] - data2[i]);
+      const dg = Math.abs(data1[i+1] - data2[i+1]);
+      const db = Math.abs(data1[i+2] - data2[i+2]);
+      if (dr + dg + db > 35) changed++;
+    }
+    return changed / total;
+  }
+
+  function onChangeDetected(ratio) {
+    const now = Date.now();
+    // Debounce so a single change doesn't spam
+    if (watcher.lastChangeTs && now - watcher.lastChangeTs < 4000) return;
+    watcher.lastChangeTs = now;
+    beep(660); setTimeout(() => beep(880), 120);
+    const wrap = $("#watcher-thumb-wrap");
+    wrap.classList.remove("flash"); void wrap.offsetWidth; wrap.classList.add("flash");
+    $("#watcher-meta-last").textContent = new Date(now).toLocaleTimeString();
+    $("#watcher-status").className = "watcher-status changed";
+    $("#watcher-status").textContent = `Slot changed at ${new Date(now).toLocaleTimeString()} — check your GE & log the trade`;
+    // After 6s, fade back to "live"
+    setTimeout(() => {
+      if (watcher.stream) {
+        $("#watcher-status").className = "watcher-status live";
+        $("#watcher-status").textContent = "Live · watching for slot changes";
+      }
+    }, 6000);
+    if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+      const n = new Notification("OSRS Flipper — GE slot changed", { body: "Open your tab to see what filled." });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => n.close(), 8000);
+    }
+  }
+
+  // Buttons
+  document.addEventListener("DOMContentLoaded", () => {
+    loadWatcherRegion();
+  });
+  // Already loaded by the time we get here; safe to bind directly:
+  loadWatcherRegion();
+  document.getElementById("watcher-toggle")?.addEventListener("click", () => {
+    startWatcher();
+  });
+  document.getElementById("watcher-stop")?.addEventListener("click", () => {
+    stopWatcher();
+  });
+  document.getElementById("watcher-recrop")?.addEventListener("click", async () => {
+    // Keep stream alive, just re-show the crop UI
+    if (!watcher.stream) { startWatcher(); return; }
+    if (watcher.intervalId) { clearInterval(watcher.intervalId); watcher.intervalId = null; }
+    showCropModal();
+  });
+
+  // ===== TAB SWITCHING =====
+  function switchTab(name) {
+    state.activeTab = name;
+    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.target === name));
+    $$(".tab-pane").forEach(p => p.hidden = p.dataset.tab !== name);
+    saveSettings();
+    renderActiveTab();
+  }
+  function renderActiveTab() {
+    if (state.activeTab === "flipping") rerender();
+    else if (state.activeTab === "alching") renderAlchTab();
+    else if (state.activeTab === "sets") renderSetsTab();
+    else if (state.activeTab === "decanting") renderDecantTab();
+    else if (state.activeTab === "herbs") renderHerbsTab();
+  }
+
+  // ===== CHART MODAL =====
+  async function openItemChart(itemId, range = "5m") {
+    itemId = +itemId;
+    const meta = state.mapping[itemId];
+    if (!meta) return;
+    const cacheKey = itemId + ":" + range;
+    let series = state.timeseriesCache[cacheKey];
+    if (!series || (Date.now() - series.ts > 5 * 60 * 1000)) {
+      try {
+        const j = await fetchJSON(`/timeseries?id=${itemId}&timestep=${range}`);
+        series = { data: j.data || [], ts: Date.now() };
+        state.timeseriesCache[cacheKey] = series;
+      } catch (e) {
+        series = { data: [], ts: Date.now() };
+      }
+    }
+    // Fire Jagex 180-day fetch in parallel (don't block modal render)
+    fetchJagex180Day(itemId).then(() => {
+      // Only redraw if the modal is still open AND is showing the same item we fetched for
+      const open = $("#modal-backdrop");
+      if (open && document.body.contains(open) && open.dataset.itemId === String(itemId)) {
+        renderModal(itemId, meta, range, series.data);
+      }
+    });
+    renderModal(itemId, meta, range, series.data);
+  }
+
+  function renderModal(itemId, meta, range, data) {
+    const valid = data.filter(d => d.avgHighPrice != null || d.avgLowPrice != null);
+    const W = 700, H = 220, padL = 50, padR = 14, padT = 12, padB = 28;
+
+    let chartSvg = "";
+    if (!valid.length) {
+      chartSvg = `<text x="${W/2}" y="${H/2}" fill="#5d6573" text-anchor="middle" font-size="12">No history available</text>`;
+    } else {
+      const allPrices = valid.flatMap(d => [d.avgHighPrice, d.avgLowPrice].filter(x => x != null));
+      const minP = Math.min(...allPrices);
+      const maxP = Math.max(...allPrices);
+      const span = maxP - minP || 1;
+      const yPad = span * 0.1;
+      const yMin = minP - yPad, yMax = maxP + yPad;
+      const t0 = valid[0].timestamp, t1 = valid[valid.length - 1].timestamp;
+      const xSpan = (t1 - t0) || 1;
+      const xAt = (t) => padL + (t - t0) / xSpan * (W - padL - padR);
+      const yAt = (p) => padT + (1 - (p - yMin) / (yMax - yMin)) * (H - padT - padB);
+
+      const pathFor = (key, color) => {
+        const pts = valid.filter(d => d[key] != null).map(d => `${xAt(d.timestamp)},${yAt(d[key])}`);
+        if (!pts.length) return "";
+        return `<polyline fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" points="${pts.join(" ")}" />`;
+      };
+
+      // Y-axis gridlines
+      const gridLines = [];
+      const labels = [];
+      const ticks = 4;
+      for (let i = 0; i <= ticks; i++) {
+        const y = padT + (H - padT - padB) * i / ticks;
+        const v = yMax - (yMax - yMin) * i / ticks;
+        gridLines.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="rgba(255,255,255,0.05)" />`);
+        labels.push(`<text x="${padL - 6}" y="${y + 3}" fill="#5d6573" font-size="10" text-anchor="end">${fmtCompact(v)}</text>`);
+      }
+
+      // X-axis date labels (3 ticks)
+      const xLabels = [];
+      for (let i = 0; i <= 3; i++) {
+        const t = t0 + (xSpan) * i / 3;
+        const date = new Date(t * 1000);
+        const lbl = range === "5m" ? date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
+                  : range === "1h" ? date.toLocaleDateString([], {month:"short",day:"numeric"}) + " " + date.toLocaleTimeString([], {hour:"2-digit"})
+                  : date.toLocaleDateString([], {month:"short",day:"numeric"});
+        xLabels.push(`<text x="${xAt(t)}" y="${H - 8}" fill="#5d6573" font-size="10" text-anchor="middle">${lbl}</text>`);
+      }
+
+      // Reference lines: 24h average high/low and your current Buy@
+      const refLines = [];
+      const d24 = state.prices24h[itemId];
+      const cfgM = priceCfg();
+      const pNow = state.prices[itemId];
+      if (d24?.avgHighPrice && d24.avgHighPrice >= yMin && d24.avgHighPrice <= yMax) {
+        const y = yAt(d24.avgHighPrice);
+        refLines.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#f87171" stroke-width="1" stroke-dasharray="3,3" opacity="0.5" />`);
+        refLines.push(`<text x="${W - padR - 4}" y="${y - 3}" fill="#f87171" font-size="9" text-anchor="end" opacity="0.85">24h avg sell</text>`);
+      }
+      if (d24?.avgLowPrice && d24.avgLowPrice >= yMin && d24.avgLowPrice <= yMax) {
+        const y = yAt(d24.avgLowPrice);
+        refLines.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#4ade80" stroke-width="1" stroke-dasharray="3,3" opacity="0.5" />`);
+        refLines.push(`<text x="${W - padR - 4}" y="${y + 11}" fill="#4ade80" font-size="9" text-anchor="end" opacity="0.85">24h avg buy</text>`);
+      }
+      if (pNow?.low != null && pNow?.high != null) {
+        const myBuyAt = pNow.low + buyBumpFor(pNow.low, pNow.high, cfgM);
+        if (myBuyAt >= yMin && myBuyAt <= yMax) {
+          const y = yAt(myBuyAt);
+          refLines.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#fcd34d" stroke-width="1.4" stroke-dasharray="6,3" opacity="0.85" />`);
+          refLines.push(`<text x="${padL + 4}" y="${y - 3}" fill="#fcd34d" font-size="10" font-weight="700">Your Buy@ ${fmt(myBuyAt)}</text>`);
+        }
+      }
+
+      // Long-term anchor: 90-day average from Jagex daily data (independent source)
+      const jagex = state.jagexCache[itemId]?.data || [];
+      let longAvg = null;
+      if (jagex.length) {
+        const cutoff = Math.floor(Date.now() / 1000) - 90 * 86400;
+        const recent90 = jagex.filter(d => d.ts >= cutoff);
+        if (recent90.length) longAvg = recent90.reduce((s, d) => s + d.price, 0) / recent90.length;
+      }
+      if (longAvg != null && longAvg >= yMin && longAvg <= yMax) {
+        const y = yAt(longAvg);
+        refLines.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#c4b5fd" stroke-width="1" stroke-dasharray="2,4" opacity="0.7" />`);
+        refLines.push(`<text x="${padL + 4}" y="${y + 10}" fill="#c4b5fd" font-size="9" opacity="0.9">90d avg (Jagex) ${fmtCompact(longAvg)}</text>`);
+      }
+
+      chartSvg = gridLines.join("") + labels.join("") + xLabels.join("")
+              + refLines.join("")
+              + pathFor("avgHighPrice", "#f87171")
+              + pathFor("avgLowPrice",  "#4ade80");
+    }
+
+    // Current snapshot stats
+    const p = state.prices[itemId] || {};
+    const vol = state.volumes[itemId] || { buy: 0, sell: 0 };
+    const cfgM = priceCfg();
+    const mBuyAt  = (p.low != null && p.high != null) ? p.low + buyBumpFor(p.low, p.high, cfgM) : null;
+    const mSellAt = (p.low != null && p.high != null) ? Math.max(mBuyAt, p.high - sellBumpFor(p.low, p.high, cfgM)) : null;
+    const tax = mSellAt ? geTaxFor(itemId, mSellAt) : 0;
+    const convFeeM = mBuyAt ? conversionFee(itemId, mBuyAt) : 0;
+    const net = (mBuyAt != null && mSellAt != null) ? (mSellAt - tax - mBuyAt - convFeeM) : null;
+
+    const html = `
+      <div class="modal-backdrop" id="modal-backdrop" data-item-id="${itemId}">
+        <div class="modal" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div class="icon-wrap">${iconImg(meta.icon, 40)}</div>
+            <div>
+              <h3>${escapeHtml(meta.name)}<span class="badge ${meta.members ? 'p' : 'f'}">${meta.members ? 'P' : 'F'}</span></h3>
+              <div class="sub">Item #${itemId} · GE limit ${meta.limit ? fmt(meta.limit) : "—"} · High alch ${meta.highalch ? fmt(meta.highalch) : "—"}</div>
+            </div>
+            <button class="modal-close" id="modal-close">✕</button>
+          </div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${chartSvg}</svg>
+            <div class="chart-legend">
+              <span><span class="legend-dot" style="background:#f87171"></span>Sell (high)</span>
+              <span><span class="legend-dot" style="background:#4ade80"></span>Buy (low)</span>
+            </div>
+            <div class="chart-range" id="chart-range">
+              <button data-range="5m" class="${range === '5m' ? 'active' : ''}">~24h (5m)</button>
+              <button data-range="1h" class="${range === '1h' ? 'active' : ''}">~12d (1h)</button>
+              <button data-range="6h" class="${range === '6h' ? 'active' : ''}">~75d (6h)</button>
+            </div>
+          </div>
+          <div class="modal-stats">
+            <div class="stat"><div class="label">Buy (low)</div><div class="value">${fmt(p.low)}</div></div>
+            <div class="stat"><div class="label">Sell (high)</div><div class="value">${fmt(p.high)}</div></div>
+            <div class="stat"><div class="label">Net (after cut+tax${convFeeM ? '+fee' : ''})</div><div class="value ${net >= 0 ? 'pos' : 'neg'}">${fmtSigned(net)}</div></div>
+            ${convFeeM ? `<div class="stat"><div class="label">Conversion fee (10%)</div><div class="value neg">−${fmt(convFeeM)}</div></div>` : ""}
+            <div class="stat"><div class="label">Buy vol/hr</div><div class="value">${fmt(vol.buy)}</div></div>
+            <div class="stat"><div class="label">Sell vol/hr</div><div class="value">${fmt(vol.sell)}</div></div>
+            ${(() => {
+              const d24m = state.prices24h[itemId];
+              if (!d24m || !d24m.avgLowPrice || mBuyAt == null) return "";
+              const pct = (mBuyAt - d24m.avgLowPrice) / d24m.avgLowPrice * 100;
+              const cls = pct >= 5 ? "neg" : pct <= -3 ? "pos" : "dim";
+              return `<div class="stat"><div class="label">Buy@ vs 24h avg</div><div class="value ${cls}">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%</div></div>`;
+            })()}
+          </div>
+        </div>
+      </div>`;
+    $("#modal-root").innerHTML = html;
+
+    $("#modal-backdrop").addEventListener("click", closeModal);
+    $("#modal-close").addEventListener("click", closeModal);
+    $("#chart-range").addEventListener("click", (e) => {
+      const r = e.target.dataset.range;
+      if (r) openItemChart(itemId, r);
+    });
+    document.addEventListener("keydown", escClose);
+  }
+  function closeModal() {
+    $("#modal-root").innerHTML = "";
+    document.removeEventListener("keydown", escClose);
+  }
+  function escClose(e) { if (e.key === "Escape") closeModal(); }
+
+  // ===== REFRESH (tiered) =====
+  // Fast tick (~6s): /latest + record history + rerender. Matches Flippr's pace.
+  // Mid tick (~30s): /5m (intra-hour aggregates)
+  // Slow tick (~60s): /1h + /24h (already covered by larger windows)
+  async function fastTick() {
+    if (fastTick._inFlight) return;     // re-entrancy guard: skip if a prior call hasn't finished
+    fastTick._inFlight = true;
+    try {
+      await loadPrices();
+      recordHistoryTick();
+      renderActiveTab();
+      state.nextRefreshAt = Date.now() + FAST_REFRESH_MS;
+    } catch (e) {
+      setStatus("Network error: " + e.message + " — retrying…", "err");
+    } finally {
+      fastTick._inFlight = false;
+    }
+  }
+  async function midTick() {
+    try { await load5m(); } catch (e) {}
+  }
+  async function slowTick() {
+    try { await Promise.all([load1h(), load24h()]); } catch (e) {}
+  }
+
+  function updateRing() {
+    if (!state.nextRefreshAt) return;
+    const remaining = Math.max(0, state.nextRefreshAt - Date.now());
+    const pct = 100 - (remaining / FAST_REFRESH_MS) * 100;
+    $("#ring").style.setProperty("--p", pct.toFixed(1));
+    $("#ring-text").textContent = Math.ceil(remaining / 1000) + "s";
+  }
+  setInterval(updateRing, 200);
+
+  // ===== EVENT BINDINGS =====
+  // Tab nav
+  $$(".tab").forEach(t => t.addEventListener("click", () => switchTab(t.dataset.target)));
+
+  // Flipping table sort — manual click overrides the strategy default
+  $$("#tbl thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      if (!k) return;
+      if (state.sortKey === k) state.sortDir = state.sortDir === "desc" ? "asc" : "desc";
+      else { state.sortKey = k; state.sortDir = (k === "name") ? "asc" : "desc"; }
+      state.sortFollowsStrategy = false; // user took manual control
+      renderTable(computeRows());
+    });
+  });
+  // Alch table sort
+  $$("#alch-tbl thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      if (state.alchSort.key === k) state.alchSort.dir = state.alchSort.dir === "desc" ? "asc" : "desc";
+      else { state.alchSort.key = k; state.alchSort.dir = (k === "name") ? "asc" : "desc"; }
+      renderAlchTab();
+    });
+  });
+  // Sets table sort
+  $$("#sets-tbl thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      if (state.setsSort.key === k) state.setsSort.dir = state.setsSort.dir === "desc" ? "asc" : "desc";
+      else { state.setsSort.key = k; state.setsSort.dir = (k === "name") ? "asc" : "desc"; }
+      renderSetsTab();
+    });
+  });
+  // Decant table sort
+  $$("#decant-tbl thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      if (state.decantSort.key === k) state.decantSort.dir = state.decantSort.dir === "desc" ? "asc" : "desc";
+      else { state.decantSort.key = k; state.decantSort.dir = (k === "name") ? "asc" : "desc"; }
+      renderDecantTab();
+    });
+  });
+
+  // Master click delegation: stars, pills (copy), position buttons, watchlist name (open), then fall through to row → chart
+  document.body.addEventListener("click", async (e) => {
+    // Star toggle
+    const star = e.target.closest("[data-star]");
+    if (star) {
+      e.stopPropagation();
+      toggleWatch(star.dataset.star);
+      if ("Notification" in window && Notification.permission === "default") {
+        requestNotifyPermission();
+      }
+      return;
+    }
+    // Mark-bought button
+    const mark = e.target.closest("[data-mark-bought]");
+    if (mark) {
+      e.stopPropagation();
+      markBought(mark.dataset.markBought);
+      requestNotifyPermission?.();
+      return;
+    }
+    // Close-position button
+    const closeBtn = e.target.closest("[data-pos-close]");
+    if (closeBtn) {
+      e.stopPropagation();
+      closePosition(closeBtn.dataset.posClose);
+      return;
+    }
+    // Price pill copy
+    const pill = e.target.closest(".price-pill");
+    if (pill) {
+      e.stopPropagation();
+      const price = pill.dataset.price;
+      try { await navigator.clipboard.writeText(price); } catch (err) {}
+      pill.classList.remove("copied"); void pill.offsetWidth; pill.classList.add("copied");
+      setTimeout(() => pill.classList.remove("copied"), 1200);
+      return;
+    }
+    // Watchlist name click → open chart
+    const watchName = e.target.closest("[data-open]");
+    if (watchName) {
+      openItemChart(watchName.dataset.open, "5m");
+      return;
+    }
+    // Default: row/card click opens chart
+    const tr = e.target.closest("tbody tr[data-id]");
+    const card = e.target.closest(".card[data-id], .slot-card[data-id]");
+    const el = tr || card;
+    if (el && el.dataset.id) openItemChart(el.dataset.id, "5m");
+  });
+
+  // Watchlist alert-target & position inputs
+  document.body.addEventListener("input", (e) => {
+    if (e.target.matches("[data-alert]")) {
+      setAlertTarget(e.target.dataset.alert, parseCash(e.target.value));
+    } else if (e.target.matches("[data-pos-price]")) {
+      updatePosition(e.target.dataset.posPrice, "buyPrice", e.target.value);
+    } else if (e.target.matches("[data-pos-qty]")) {
+      updatePosition(e.target.dataset.posQty, "qty", e.target.value);
+    }
+  });
+
+  // Filter handlers
+  // When strategy preset changes, reset to its default sort
+  document.getElementById("strategy")?.addEventListener("change", () => {
+    state.sortFollowsStrategy = true;
+  });
+
+  ["strategy","search","minVol","maxStale","members","cut","edge","hideZero","hideSus","cash","slots"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const ev = (el.type === "checkbox" || el.tagName === "SELECT") ? "change" : "input";
+    let t;
+    el.addEventListener(ev, () => {
+      clearTimeout(t);
+      t = setTimeout(rerender, 80);
+    });
+  });
+  ["alch-search","alch-minProfit","alch-cash","alch-members"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const ev = (el.type === "checkbox" || el.tagName === "SELECT") ? "change" : "input";
+    let t;
+    el.addEventListener(ev, () => { clearTimeout(t); t = setTimeout(renderAlchTab, 80); });
+  });
+  ["sets-minProfit"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => renderSetsTab());
+  });
+  ["decant-search","decant-minProfit","decant-minVol"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => renderDecantTab());
+  });
+  ["herbs-search","herbs-minProfit","herbs-minVol"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => renderHerbsTab());
+  });
+
+  // Herbs table sort
+  $$("#herbs-tbl thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      if (state.herbsSort.key === k) state.herbsSort.dir = state.herbsSort.dir === "desc" ? "asc" : "desc";
+      else { state.herbsSort.key = k; state.herbsSort.dir = (k === "name") ? "asc" : "desc"; }
+      renderHerbsTab();
+    });
+  });
+
+  // Persist any input change
+  PERSISTED_INPUTS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const ev = (el.type === "checkbox" || el.tagName === "SELECT") ? "change" : "input";
+    el.addEventListener(ev, () => { saveSettings(); });
+  });
+
+  // Keyboard: / to focus search of active tab
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
+      e.preventDefault();
+      const search = state.activeTab === "flipping" ? $("#search")
+                   : state.activeTab === "alching"  ? $("#alch-search")
+                   : state.activeTab === "decanting" ? $("#decant-search")
+                   : null;
+      if (search) search.focus();
+    }
+  });
+
+  // ===== VIEW MODE (mobile vs desktop) =====
+  const VIEW_KEY = "osrs-flipper-view-v1";
+  function detectIsMobile() {
+    const narrow = window.matchMedia("(max-width: 820px)").matches;
+    const touch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+    const ua = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+    return narrow || (touch && ua);
+  }
+  function applyViewMode(mode) {
+    document.body.classList.toggle("mobile-view", mode === "mobile");
+    document.body.classList.toggle("desktop-view", mode === "desktop");
+    const btn = $("#view-toggle");
+    if (btn) {
+      btn.textContent = mode === "mobile" ? "📱" : "💻";
+      btn.title = `Current: ${mode}. Click to switch.`;
+    }
+    // On mobile, controls start collapsed; on desktop always expanded.
+    const controls = $("#flipping-controls");
+    if (controls) controls.classList.toggle("collapsed", mode === "mobile");
+  }
+  function setViewMode(mode) {
+    try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {}
+    applyViewMode(mode);
+  }
+  function showViewPicker(suggested) {
+    const root = document.createElement("div");
+    root.id = "view-picker-root";
+    root.innerHTML = `
+      <div class="view-picker-backdrop">
+        <div class="view-picker">
+          <h2>Pick your view</h2>
+          <div class="sub">You can switch anytime from the 💻 / 📱 button in the header.</div>
+          <div class="view-picker-options">
+            <button class="view-picker-option ${suggested === 'desktop' ? 'suggested' : ''}" data-mode="desktop">
+              <span class="vp-icon">💻</span>
+              <div class="vp-title">Desktop</div>
+              <div class="vp-desc">Wide tables, dense data, every column visible. Best with a big screen.</div>
+              ${suggested === 'desktop' ? '<span class="vp-tag">Detected</span>' : ''}
+            </button>
+            <button class="view-picker-option ${suggested === 'mobile' ? 'suggested' : ''}" data-mode="mobile">
+              <span class="vp-icon">📱</span>
+              <div class="vp-title">Mobile</div>
+              <div class="vp-desc">Stacked cards, big price pills, swipeable tabs. Optimised for phones.</div>
+              ${suggested === 'mobile' ? '<span class="vp-tag">Detected</span>' : ''}
+            </button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(root);
+    root.querySelectorAll("[data-mode]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        setViewMode(btn.dataset.mode);
+        root.remove();
+        // After picking, re-render so anything mode-dependent updates
+        try { renderActiveTab(); } catch (e) {}
+      });
+    });
+  }
+  function initViewMode() {
+    let saved = null;
+    try { saved = localStorage.getItem(VIEW_KEY); } catch (e) {}
+    if (saved === "mobile" || saved === "desktop") {
+      applyViewMode(saved);
+    } else {
+      const suggested = detectIsMobile() ? "mobile" : "desktop";
+      applyViewMode(suggested); // apply pre-emptively so layout settles while picker is up
+      // Defer the picker until the DOM is fully ready
+      setTimeout(() => showViewPicker(suggested), 200);
+    }
+  }
+  $("#view-toggle")?.addEventListener("click", () => {
+    const next = document.body.classList.contains("mobile-view") ? "desktop" : "mobile";
+    setViewMode(next);
+    try { renderActiveTab(); } catch (e) {}
+  });
+  $("#mobile-filter-toggle")?.addEventListener("click", () => {
+    const c = $("#flipping-controls");
+    if (c) c.classList.toggle("collapsed");
+  });
+
+  (async function init() {
+    try {
+      loadSettings();
+      initViewMode();
+      // Apply restored active tab visually
+      $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.target === state.activeTab));
+      $$(".tab-pane").forEach(p => p.hidden = p.dataset.tab !== state.activeTab);
+
+      setStatus("Loading item catalog…", "warn");
+      await loadMapping();
+      setStatus("Catalog loaded · fetching prices…", "warn");
+      await Promise.all([loadPrices(), load5m(), load1h(), load24h()]);
+      recordHistoryTick();
+      renderActiveTab();
+      renderNews(); // Fire news fetch (won't block render)
+      setInterval(renderNews, NEWS_CACHE_MS); // Re-poll hourly
+      state.nextRefreshAt = Date.now() + FAST_REFRESH_MS;
+      // Tiered polling
+      setInterval(fastTick, FAST_REFRESH_MS);
+      setInterval(midTick, MID_REFRESH_MS);
+      setInterval(slowTick, SLOW_REFRESH_MS);
+
+      // Pause polling when tab is hidden, resume + refresh when shown
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) { fastTick(); }
+      });
+    } catch (e) {
+      setStatus("Init failed: " + e.message, "err");
+    }
+  })();
+</script>
+</body>
+</html>

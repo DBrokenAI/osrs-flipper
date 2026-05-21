@@ -1,0 +1,33 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local dev / temp
+node_modules/
+dist/
+build/
+.cache/
+*.tmp
+*.bak
+
+# OneDrive icon files
+*.url
+
+# Don't commit any private/test data that might end up here
+secrets.json
+.env
+.env.local

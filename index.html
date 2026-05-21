@@ -698,7 +698,8 @@
     .item-cell { min-width: 160px; }
     .tabs { width: 100%; order: 3; margin-left: 0; }
   }
-
+</style>
+<style data-disabled-remnant>
   /* ===== VIEW-MODE PICKER MODAL (first-load only) ===== */
   .view-picker-backdrop {
     position: fixed; inset: 0; z-index: 300;
@@ -3935,7 +3936,6 @@
   (async function init() {
     try {
       loadSettings();
-      initViewMode();
       // Apply restored active tab visually
       $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.target === state.activeTab));
       $$(".tab-pane").forEach(p => p.hidden = p.dataset.tab !== state.activeTab);

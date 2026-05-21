@@ -1826,6 +1826,24 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  // ===== VISIBLE ERROR BANNER (catches anything that breaks before init can report) =====
+  window.addEventListener("error", (e) => {
+    let banner = document.getElementById("__js_error_banner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "__js_error_banner";
+      banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:12px 16px;font:13px/1.4 ui-monospace,monospace;border-bottom:2px solid #fca5a5;white-space:pre-wrap;max-height:50vh;overflow:auto;";
+      document.body && document.body.appendChild(banner);
+    }
+    banner.textContent = (banner.textContent ? banner.textContent + "\n\n" : "") +
+      "⚠ JS ERROR: " + (e.message || "(no message)") + "\n  at " + (e.filename || "?") + ":" + (e.lineno || "?") + ":" + (e.colno || "?");
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const msg = e.reason && (e.reason.message || e.reason.toString()) || "(unknown rejection)";
+    const evt = new ErrorEvent("error", { message: "Unhandled promise rejection: " + msg });
+    window.dispatchEvent(evt);
+  });
+
   function fmt(n) {
     if (n == null || Number.isNaN(n) || !isFinite(n)) return "—";
     return Math.round(n).toLocaleString();

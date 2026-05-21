@@ -912,6 +912,7 @@
         <option value="brewing">🔮 Brewing Deals</option>
         <option value="bigmover">🚀 Big Movers (volume surge)</option>
         <option value="position">💎 Position Trades (long hold)</option>
+        <option value="all">📋 All items (no filter)</option>
       </select>
     </div>
     <div class="field search">
@@ -2177,15 +2178,15 @@
       const lowAge = p.lowTime ? now - p.lowTime : null;
       const highAge = p.highTime ? now - p.highTime : null;
       const newest = Math.min(lowAge ?? Infinity, highAge ?? Infinity);
-      if (newest > maxStale) continue;
+      if (strategy !== "all" && newest > maxStale) continue;
 
       const vol = state.volumes[idStr] || { buy: 0, sell: 0 };
       const buyVol = vol.buy, sellVol = vol.sell;
       const throughput = Math.min(buyVol, sellVol);
-      if (throughput < minVol) continue;
+      if (strategy !== "all" && throughput < minVol) continue;
 
       const margin = high - low;
-      if (hideZero && margin <= 0) continue;
+      if (strategy !== "all" && hideZero && margin <= 0) continue;
 
       const buyAt = low + buyBumpFor(low, high, cfg);
       const sellAt = Math.max(buyAt, high - sellBumpFor(low, high, cfg));
@@ -2222,7 +2223,7 @@
           suspectReason = "One-sided market";
         }
       }
-      if (hideSus && suspect) continue;
+      if (strategy !== "all" && hideSus && suspect) continue;
 
       // ===== DROP-RISK: are we buying near the top of the 24h range? =====
       // Compares your Buy@ to the 24h average low. If you're paying meaningfully
@@ -2464,6 +2465,7 @@
       else if (strategy === "brewing")  { effectiveKey = "brewingScore"; effectiveDir = "desc"; }
       else if (strategy === "bigmover") { effectiveKey = "bigMoverScore"; effectiveDir = "desc"; }
       else if (strategy === "position") { effectiveKey = "positionScore"; effectiveDir = "desc"; }
+      else if (strategy === "all") { effectiveKey = "name"; effectiveDir = "asc"; }
       else { effectiveKey = "expectedHourlyProfit"; effectiveDir = "desc"; }
     }
     rows.sort((a, b) => {
